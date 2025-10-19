@@ -1,0 +1,5 @@
+server.port: 8080
+puriflow4j:
+  logs:
+    enabled: true     # ← that's enough; the wrapper will apply to all appenders
+    root-only: true   # you can use false if you want to wrap child loggers too

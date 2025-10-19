@@ -22,13 +22,20 @@ subprojects {
         options.encoding = "UTF-8"
         options.release.set(21)
     }
+}
 
-    publishing {
-        publications {
-            create<MavenPublication>("mavenJava") {
-                from(components["java"])
-            }
-        }
-        repositories { mavenLocal() }
+configure(listOf(project(":puriflow4j-core"), project(":puriflow4j-logs"))) {
+    apply(plugin = "groovy")
+
+    dependencies {
+        testImplementation(platform("org.spockframework:spock-bom:2.3-groovy-4.0"))
+        testImplementation("org.spockframework:spock-core")
+        testImplementation("org.apache.groovy:groovy-all:4.0.23")
+
+        testImplementation("org.assertj:assertj-core:3.26.3")
+
+        testImplementation("ch.qos.logback:logback-classic:1.5.7")
     }
+
+    tasks.test { useJUnitPlatform() }
 }
