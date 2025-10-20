@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Puriflow4J Contributors
  * Licensed under the Apache License 2.0
  */
-package io.puriflow4j.logs;
+package io.puriflow4j.logs.logback;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.*;
@@ -11,7 +11,10 @@ import java.util.Map;
 import org.slf4j.Marker;
 import org.slf4j.event.KeyValuePair;
 
-/** Logging event wrapper that overrides only getFormattedMessage(). */
+/**
+ * A lightweight wrapper around an existing ILoggingEvent that overrides
+ * the formatted message while delegating everything else.
+ */
 final class SanitizedLoggingEvent implements ILoggingEvent {
     private final ILoggingEvent delegate;
     private final String sanitizedMessage;
@@ -27,6 +30,11 @@ final class SanitizedLoggingEvent implements ILoggingEvent {
     }
 
     @Override
+    public String getMessage() {
+        return sanitizedMessage;
+    }
+
+    @Override
     public String getThreadName() {
         return delegate.getThreadName();
     }
@@ -34,11 +42,6 @@ final class SanitizedLoggingEvent implements ILoggingEvent {
     @Override
     public Level getLevel() {
         return delegate.getLevel();
-    }
-
-    @Override
-    public String getMessage() {
-        return delegate.getMessage();
     }
 
     @Override

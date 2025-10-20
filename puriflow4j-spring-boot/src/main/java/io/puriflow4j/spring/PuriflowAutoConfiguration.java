@@ -4,28 +4,33 @@
  */
 package io.puriflow4j.spring;
 
-import ch.qos.logback.classic.*;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.Appender;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.puriflow4j.core.api.*;
-import io.puriflow4j.core.api.models.*;
-import io.puriflow4j.core.detect.Detector;
+import io.puriflow4j.core.api.Modes;
+import io.puriflow4j.core.api.Sanitizer;
+import io.puriflow4j.core.api.models.Action;
 import io.puriflow4j.core.preset.DetectorRegistry;
 import io.puriflow4j.core.preset.KVPatternConfig;
 import io.puriflow4j.core.report.Reporter;
-import io.puriflow4j.logs.PurifyAppender;
-import java.util.*;
-import java.util.stream.Collectors;
-import org.slf4j.ILoggerFactory;
-import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.*;
+import io.puriflow4j.logs.logback.LogbackIntegration;
+import java.util.ArrayList;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-/** Auto-configures log sanitization from YAML. */
-@AutoConfiguration
+/**
+ * Spring Boot auto-config that:
+ *  - builds Sanitizer from YAML
+ *  - detects Logback backend and attaches a reset-resistant listener
+ *  - does not require any changes in user's logback.xml
+ *  - does not pull any logging backend transitively (compileOnly deps)
+ */
+@Slf4j
+@Configuration
 @EnableConfigurationProperties(PuriflowProperties.class)
 public class PuriflowAutoConfiguration {
 
@@ -48,9 +53,9 @@ public class PuriflowAutoConfiguration {
     public Object puriflowInit(PuriflowProperties props, Reporter reporter) {
         if (!props.getLogs().isEnabled()) return new Object();
 
-        // build detectors from enum list (or defaults)
+        // 1) Build detector set from YAML (or defaults)
         var registry = new DetectorRegistry();
-        var types = (props.getDetectors() == null || props.getDetectors().isEmpty())
+        var types = props.getDetectors().isEmpty()
                 ? new ArrayList<>(DetectorRegistry.defaultTypes())
                 : new ArrayList<>(props.getDetectors());
 
@@ -58,50 +63,24 @@ public class PuriflowAutoConfiguration {
                 props.getLogs().getKeyAllowlist(), props.getLogs().getKeyBlocklist());
         var detectors = registry.build(types, kvCfg);
 
-        // mode → action
+        // 2) Mode → Action + Sanitizer
         Action action = Modes.actionFor(props.getMode());
+        var sanitizer = new Sanitizer(detectors, action);
 
-        // wrap root logger appenders (with only/ignore filters)
-        ILoggerFactory lf = LoggerFactory.getILoggerFactory();
-        if (lf instanceof LoggerContext ctx) {
-            wrapLogger(ctx.getLogger(Logger.ROOT_LOGGER_NAME), detectors, action, reporter, props);
+        // 3) Detect backend: Logback → attach listener; otherwise safe no-op
+
+        boolean isLogback = LogbackIntegration.activateIfLogback(
+                reporter,
+                sanitizer,
+                props.getLogs().getOnlyLoggers(),
+                props.getLogs().getIgnoreLoggers());
+        if (isLogback) {
+            return new Object();
         }
+
+        log.warn(
+                "Puriflow4j: logging backend is unknown, masking is not activated. Bring puriflow4j adapter for your backend.");
+
         return new Object();
-    }
-
-    private void wrapLogger(
-            Logger logger, List<Detector> detectors, Action action, Reporter reporter, PuriflowProperties props) {
-
-        var only = props.getLogs().getOnlyLoggers().stream()
-                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-        var ignore = props.getLogs().getIgnoreLoggers().stream()
-                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-
-        // snapshot current appenders
-        var toWrap = new ArrayList<Appender<ILoggingEvent>>();
-        for (Iterator<Appender<ILoggingEvent>> e = logger.iteratorForAppenders(); e.hasNext(); ) {
-            toWrap.add(e.next());
-        }
-
-        for (Appender<ILoggingEvent> app : toWrap) {
-            if (PurifyAppender.isPurify(app)) continue;
-
-            String lname = logger.getName() == null ? "" : logger.getName().toLowerCase(Locale.ROOT);
-            if (!only.isEmpty() && !only.contains(lname)) continue;
-            if (!ignore.isEmpty() && ignore.contains(lname)) continue;
-
-            logger.detachAppender(app);
-
-            var sanitizer = new Sanitizer(detectors, action);
-            var wrapper = new PurifyAppender(app, reporter);
-            wrapper.setContext(logger.getLoggerContext());
-            wrapper.setName("PURIFY_WRAPPER_" + app.getName());
-            wrapper.setSanitizer(sanitizer);
-            wrapper.start();
-
-            logger.addAppender(wrapper);
-        }
     }
 }

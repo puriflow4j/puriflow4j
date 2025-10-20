@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+io.puriflow4j.spring.PuriflowAutoConfiguration

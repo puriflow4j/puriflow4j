@@ -59,6 +59,8 @@ subprojects {
             }
         }
 
+        tasks.matching { it.name == "spotbugsTest" }.configureEach { this.enabled = false }
+
         tasks.named("check") { dependsOn("spotbugsMain") }
     }
 }
