@@ -4,6 +4,7 @@
  */
 package io.puriflow4j.core.api;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.puriflow4j.core.api.models.*;
 import io.puriflow4j.core.detect.Detector;
 import java.util.*;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
 /** Composite sanitizer that runs all detectors and applies right-to-left replacements. */
 public final class Sanitizer {
 
+    @SuppressFBWarnings
     public record Result(String sanitized, List<Finding> findings) {}
 
     private final List<Detector> detectors;

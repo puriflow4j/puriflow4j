@@ -1,9 +1,16 @@
-plugins { `java-library`; groovy }
+plugins { `java-library` }
+
+java {
+    toolchain { languageVersion.set(JavaLanguageVersion.of(21)) }
+    withSourcesJar()
+}
 
 dependencies {
-    api(project(":puriflow4j-core"))
-    api("ch.qos.logback:logback-classic:1.5.8")
+    api(project(":puriflow4j-core"))              // reuse Sanitizer API
+    compileOnlyApi("ch.qos.logback:logback-classic:1.5.12") // do not pull logback transitively
+    compileOnly("com.github.spotbugs:spotbugs-annotations:4.8.6")
+}
 
-    testImplementation(project(":puriflow4j-core"))
-    testImplementation("ch.qos.logback:logback-classic:1.5.7")
+publishing {
+    publications { create<MavenPublication>("mavenJava") { from(components["java"]) } }
 }

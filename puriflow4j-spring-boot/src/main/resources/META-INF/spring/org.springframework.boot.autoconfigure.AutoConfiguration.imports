@@ -1,1 +1,2 @@
-io.puriflow4j.spring.PuriflowAutoConfiguration
+io.puriflow4j.spring.PuriflowBaseAutoConfiguration
+io.puriflow4j.spring.PuriflowLogbackAutoConfiguration
