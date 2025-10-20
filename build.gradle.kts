@@ -63,7 +63,12 @@ subprojects {
     }
 }
 
-configure(listOf(project(":puriflow4j-core"), project(":puriflow4j-logs"))) {
+configure(
+        listOf(
+                project(":puriflow4j-core"),
+                project(":puriflow4j-logs-logback")
+        )
+) {
     apply(plugin = "groovy")
 
     dependencies {
