@@ -4,53 +4,48 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import io.puriflow4j.core.api.Sanitizer;
-import io.puriflow4j.core.preset.BuiltInDetectors;
+import io.puriflow4j.core.api.Sanitizer.Result;
 
-import java.util.Objects;
+import io.puriflow4j.core.report.Reporter;
 
-/**
- * Wrapper around any Appender<ILoggingEvent>.
- * Sanitizes only the formattedMessage, then delegates the event to the original appender.
- */
 public class PurifyAppender extends AppenderBase<ILoggingEvent> {
-
     private final Appender<ILoggingEvent> delegate;
     private volatile Sanitizer sanitizer;
+    private final Reporter reporter;
 
-    public PurifyAppender(Appender<ILoggingEvent> delegate) {
+    public PurifyAppender(Appender<ILoggingEvent> delegate, Reporter reporter) {
         this.delegate = delegate;
+        this.reporter = reporter;
     }
+
+    /**
+     * Starter injects the Sanitizer built from YAML.
+     */
+    public void setSanitizer(Sanitizer sanitizer) { this.sanitizer = sanitizer; }
+    public Appender<ILoggingEvent> getDelegate() { return delegate; }
 
     @Override
     public void start() {
         if (!isStarted()) {
-            this.sanitizer = new Sanitizer(BuiltInDetectors.minimal());
-            // Inherit context from delegate (if any)
-            if (getContext() == null && delegate.getContext() != null) {
-                setContext(delegate.getContext());
-            }
+            if (getContext() == null && delegate.getContext() != null) setContext(delegate.getContext());
             super.start();
         }
     }
 
     @Override
     protected void append(ILoggingEvent event) {
-        // Sanitize the already formatted string
-        String formatted = event.getFormattedMessage();
-        String sanitized = sanitizer.apply(formatted);
-        if (Objects.equals(sanitized, formatted) || sanitized.equals(formatted)) {
-            delegate.doAppend(event); // no changes
+        if (sanitizer == null) {
+            delegate.doAppend(event);
+            return;
+        }
+        Result res = sanitizer.applyDetailed(event.getFormattedMessage(), event.getLoggerName());
+        if (!res.findings().isEmpty()) reporter.report(res.findings());
+        if (res.sanitized().equals(event.getFormattedMessage())) {
+            delegate.doAppend(event);
         } else {
-            delegate.doAppend(new SanitizedLoggingEvent(event, sanitized));
+            delegate.doAppend(new SanitizedLoggingEvent(event, res.sanitized()));
         }
     }
 
-    public Appender<ILoggingEvent> getDelegate() { return delegate; }
-
-    /**
-     * Indicates that the appender has already been wrapped (so as not to wrap it again).
-     * */
-    public static boolean isPurify(Appender<?> app) {
-        return app instanceof PurifyAppender;
-    }
+    public static boolean isPurify(Appender<?> app) { return app instanceof PurifyAppender; }
 }

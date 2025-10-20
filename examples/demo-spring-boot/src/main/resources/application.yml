@@ -1,5 +1,20 @@
 server.port: 8080
+
 puriflow4j:
+  mode: mask               # dry-run | mask | strict
+  detectors:               # глобальный дефолтный набор
+    - email
+    - jwt
+    - password
+    - aws-key
+    - authorization
+    - credit-card
+
   logs:
-    enabled: true     # ← that's enough; the wrapper will apply to all appenders
-    root-only: true   # you can use false if you want to wrap child loggers too
+    enabled: true
+    only-loggers: []       # if empty - all
+    ignore-loggers: []     # ignore by prefix/full name
+    key-allowlist: [traceId,requestId,correlationId]  # never mask these keys
+    key-blocklist:  [] # force mask
+
+management.endpoints.web.exposure.include: "*"

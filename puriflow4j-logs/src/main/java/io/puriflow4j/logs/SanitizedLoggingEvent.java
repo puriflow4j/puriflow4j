@@ -9,7 +9,7 @@ import org.slf4j.Marker;
 import org.slf4j.event.KeyValuePair;
 
 /**
- * A wrapper that only changes getFormattedMessage() to a cleaned string. The rest is delegated.
+ * Logging event wrapper that overrides only getFormattedMessage().
  */
 final class SanitizedLoggingEvent implements ILoggingEvent {
     private final ILoggingEvent delegate;
@@ -40,4 +40,3 @@ final class SanitizedLoggingEvent implements ILoggingEvent {
     @Override public List<KeyValuePair> getKeyValuePairs() { return delegate.getKeyValuePairs(); }
     @Override public void prepareForDeferredProcessing() { delegate.prepareForDeferredProcessing(); }
 }
-
