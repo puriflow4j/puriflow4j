@@ -2,7 +2,7 @@ server.port: 8080
 
 puriflow4j:
   mode: mask               # dry-run | mask | strict
-  detectors:               # глобальный дефолтный набор
+  detectors:
     - email
     - jwt
     - password

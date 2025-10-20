@@ -7,7 +7,7 @@ java {
 
 dependencies {
     api(project(":puriflow4j-core"))              // reuse Sanitizer API
-    compileOnly("ch.qos.logback:logback-classic:1.5.12") // do not pull logback transitively
+    compileOnlyApi("ch.qos.logback:logback-classic:1.5.12") // do not pull logback transitively
     compileOnly("com.github.spotbugs:spotbugs-annotations:4.8.6")
 }
 

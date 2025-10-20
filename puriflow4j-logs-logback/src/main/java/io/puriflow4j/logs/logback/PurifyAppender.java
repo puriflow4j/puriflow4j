@@ -15,8 +15,7 @@ import java.util.Objects;
 
 /**
  * Wraps a real Logback appender and sanitizes the formatted message before delegating.
- * No heuristics here: every message is scanned. Designed to be attached programmatically
- * on top of user's configuration without requiring changes in logback.xml.
+ * Designed to sit on top of user's appender chain; compatible with any logback.xml.
  */
 public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
 
@@ -24,14 +23,9 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
     private volatile Sanitizer sanitizer;
     private final Reporter reporter;
 
-    /**
-     * Intentionally stores framework-managed objects (delegate appender and reporter) by reference.
-     * We never expose them via accessors; lifecycle is owned by the logging framework / DI container.
-     */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
-            justification = "Delegate appender and reporter are framework-managed; "
-                    + "no getters expose them and copying is impossible/meaningless.")
+            justification = "Delegate appender is framework-managed; reference is not exposed.")
     public PurifyAppender(Appender<ILoggingEvent> delegate, Reporter reporter) {
         this.delegate = Objects.requireNonNull(delegate, "delegate");
         this.reporter = Objects.requireNonNull(reporter, "reporter");
@@ -43,24 +37,21 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     public void start() {
-        if (getContext() == null && delegate.getContext() != null) {
-            setContext(delegate.getContext());
-        }
+        if (getContext() == null && delegate.getContext() != null) setContext(delegate.getContext());
         super.start();
     }
 
     @Override
-    protected void append(ILoggingEvent event) {
-        if (sanitizer == null) {
-            // Fallback: nothing to sanitize, just pass through
+    public void append(ILoggingEvent event) {
+        Sanitizer s = this.sanitizer;
+        if (s == null) {
             delegate.doAppend(event);
             return;
         }
+
         String original = event.getFormattedMessage();
-        Result res = sanitizer.applyDetailed(original, event.getLoggerName());
-        if (!res.findings().isEmpty()) {
-            reporter.report(res.findings());
-        }
+        Result res = s.applyDetailed(original, event.getLoggerName());
+        if (!res.findings().isEmpty()) reporter.report(res.findings());
 
         if (res.sanitized().equals(original)) {
             delegate.doAppend(event);
@@ -69,7 +60,6 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
         }
     }
 
-    /** Returns true if the given appender is already a Purify wrapper to avoid double-wrapping. */
     public static boolean isPurify(Appender<?> app) {
         return app instanceof PurifyAppender;
     }
