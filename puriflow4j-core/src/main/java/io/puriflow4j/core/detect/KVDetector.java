@@ -1,14 +1,17 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.core.detect;
 
 import io.puriflow4j.core.api.models.*;
 import io.puriflow4j.core.preset.KVPatternConfig;
-
 import java.util.*;
 import java.util.regex.*;
 
 /**
- * KV detector masks only the value in "key[:=] value" pairs using named groups (?<key>...) and (?<val>...).
- * If (?<key>) is missing, it falls back to a heuristic key lookup (rare).
+ * KV detector masks only the value in "key[:=] value" pairs using named groups (?<key>...) and
+ * (?<val>...). If (?<key>) is missing, it falls back to a heuristic key lookup (rare).
  */
 public final class KVDetector implements Detector {
     private final String name;
@@ -25,7 +28,10 @@ public final class KVDetector implements Detector {
         this.cfg = (cfg == null) ? KVPatternConfig.defaults() : cfg;
     }
 
-    @Override public String name() { return name; }
+    @Override
+    public String name() {
+        return name;
+    }
 
     @Override
     public DetectionResult detect(String input) {
@@ -54,7 +60,7 @@ public final class KVDetector implements Detector {
         }
         // Fallback (rare): look ~40 chars to the left for "<key>[:=]"
         int matchStart = m.start();
-        int matchEnd   = m.end();
+        int matchEnd = m.end();
         int start = Math.max(0, matchStart - 40);
         String left = input.substring(start, Math.min(input.length(), matchEnd));
         Matcher k = Pattern.compile("(?i)([a-z0-9._-]{2,32})\\s*[:=]\\s*$").matcher(left);

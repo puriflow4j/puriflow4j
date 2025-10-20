@@ -1,9 +1,12 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.spring;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.puriflow4j.core.api.models.Finding;
 import io.puriflow4j.core.report.Reporter;
-
 import java.util.*;
 
 public final class MicrometerReporter implements Reporter {

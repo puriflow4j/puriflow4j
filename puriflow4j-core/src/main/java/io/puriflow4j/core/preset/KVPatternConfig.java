@@ -1,24 +1,25 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.core.preset;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Holds allowlist/blocklist for KV keys to reduce false positives.
- */
+/** Holds allowlist/blocklist for KV keys to reduce false positives. */
 public final class KVPatternConfig {
     private final Set<String> allow;
     private final Set<String> block;
 
     private KVPatternConfig(Set<String> allow, Set<String> block) {
-        this.allow = allow; this.block = block;
+        this.allow = allow;
+        this.block = block;
     }
 
     public static KVPatternConfig of(List<String> allow, List<String> block) {
         return new KVPatternConfig(
-                normalize(allow),
-                normalize(block == null || block.isEmpty() ? defaultsBlock() : block)
-        );
+                normalize(allow), normalize(block == null || block.isEmpty() ? defaultsBlock() : block));
     }
 
     public static KVPatternConfig defaults() {
@@ -36,18 +37,34 @@ public final class KVPatternConfig {
     }
 
     private static Set<String> normalize(List<String> keys) {
-        return keys == null ? Set.of() :
-                keys.stream().filter(Objects::nonNull).map(KVPatternConfig::norm).collect(Collectors.toSet());
+        return keys == null
+                ? Set.of()
+                : keys.stream()
+                        .filter(Objects::nonNull)
+                        .map(KVPatternConfig::norm)
+                        .collect(Collectors.toSet());
     }
 
-    private static String norm(String s) { return s.toLowerCase(Locale.ROOT).trim(); }
+    private static String norm(String s) {
+        return s.toLowerCase(Locale.ROOT).trim();
+    }
 
     private static List<String> defaultsAllow() {
-        return List.of("traceid","requestid","correlationid");
+        return List.of("traceid", "requestid", "correlationid");
     }
 
     private static List<String> defaultsBlock() {
-        return List.of("password","pwd","passphrase","secret","apikey","api-key","api_key",
-                "token","bearer-token","auth-token","authorization");
+        return List.of(
+                "password",
+                "pwd",
+                "passphrase",
+                "secret",
+                "apikey",
+                "api-key",
+                "api_key",
+                "token",
+                "bearer-token",
+                "auth-token",
+                "authorization");
     }
 }

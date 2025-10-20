@@ -1,18 +1,18 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.core.detect;
 
 import io.puriflow4j.core.api.models.*;
 import io.puriflow4j.core.preset.KVPatternConfig;
-
 import java.util.*;
 import java.util.regex.*;
 
-/**
- * Matches "Authorization: Bearer <token>" and masks only the token.
- */
+/** Matches "Authorization: Bearer <token>" and masks only the token. */
 public final class AuthorizationBearerKVDetector implements Detector {
-    private static final Pattern P = Pattern.compile(
-            "(?i)authorization\\s*[:=]\\s*bearer\\s*(?<val>[A-Za-z0-9._~-]{20,400})"
-    );
+    private static final Pattern P =
+            Pattern.compile("(?i)authorization\\s*[:=]\\s*bearer\\s*(?<val>[A-Za-z0-9._~-]{20,400})");
     private final String replacement;
     private final KVPatternConfig cfg;
 
@@ -21,7 +21,10 @@ public final class AuthorizationBearerKVDetector implements Detector {
         this.cfg = (cfg == null) ? KVPatternConfig.defaults() : cfg;
     }
 
-    @Override public String name() { return "authorizationBearerKV"; }
+    @Override
+    public String name() {
+        return "authorizationBearerKV";
+    }
 
     @Override
     public DetectionResult detect(String input) {
