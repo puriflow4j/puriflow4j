@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.core.detect;
 
 import io.puriflow4j.core.api.models.*;
@@ -17,7 +21,10 @@ public final class RegexDetector implements Detector {
         this.replacement = replacement;
     }
 
-    @Override public String name() { return name; }
+    @Override
+    public String name() {
+        return name;
+    }
 
     @Override
     public DetectionResult detect(String input) {

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- Example: ignore Lombok-generated methods -->
+    <Match>
+        <Class name="~.*\$.*"/>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+    <!-- Ignore loggers being transient/static -->
+    <Match>
+        <Field name="LOG" type="org.slf4j.Logger"/>
+    </Match>
+</FindBugsFilter>

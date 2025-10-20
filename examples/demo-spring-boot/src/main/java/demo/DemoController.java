@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package demo;
 
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +14,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class DemoController {
 
     @GetMapping("/log")
-    public String log(@RequestHeader(value="Authorization", required=false) String auth) {
+    public String log(@RequestHeader(value = "Authorization", required = false) String auth) {
         var email = "alice@example.com";
-        var aws   = "AKIA1234567890ABCDE1";
-        var jwt   = "eyJ.hdr.pay.sig";
+        var aws = "AKIA1234567890ABCDE1";
+        var jwt = "eyJ.hdr.pay.sig";
 
         log.info("User email: {}, awsKey: {}, token: {}", email, aws, jwt);
         log.info("password=MySecret123");

@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.logs;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -5,7 +9,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.Sanitizer.Result;
-
 import io.puriflow4j.core.report.Reporter;
 
 public class PurifyAppender extends AppenderBase<ILoggingEvent> {
@@ -18,11 +21,14 @@ public class PurifyAppender extends AppenderBase<ILoggingEvent> {
         this.reporter = reporter;
     }
 
-    /**
-     * Starter injects the Sanitizer built from YAML.
-     */
-    public void setSanitizer(Sanitizer sanitizer) { this.sanitizer = sanitizer; }
-    public Appender<ILoggingEvent> getDelegate() { return delegate; }
+    /** Starter injects the Sanitizer built from YAML. */
+    public void setSanitizer(Sanitizer sanitizer) {
+        this.sanitizer = sanitizer;
+    }
+
+    public Appender<ILoggingEvent> getDelegate() {
+        return delegate;
+    }
 
     @Override
     public void start() {
@@ -47,5 +53,7 @@ public class PurifyAppender extends AppenderBase<ILoggingEvent> {
         }
     }
 
-    public static boolean isPurify(Appender<?> app) { return app instanceof PurifyAppender; }
+    public static boolean isPurify(Appender<?> app) {
+        return app instanceof PurifyAppender;
+    }
 }

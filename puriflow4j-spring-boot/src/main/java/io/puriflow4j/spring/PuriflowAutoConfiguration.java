@@ -1,3 +1,7 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.spring;
 
 import ch.qos.logback.classic.*;
@@ -9,18 +13,16 @@ import io.puriflow4j.core.api.models.*;
 import io.puriflow4j.core.detect.Detector;
 import io.puriflow4j.core.preset.DetectorRegistry;
 import io.puriflow4j.core.preset.KVPatternConfig;
-import io.puriflow4j.logs.PurifyAppender;
 import io.puriflow4j.core.report.Reporter;
-
+import io.puriflow4j.logs.PurifyAppender;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /** Auto-configures log sanitization from YAML. */
 @AutoConfiguration
@@ -52,7 +54,8 @@ public class PuriflowAutoConfiguration {
                 ? new ArrayList<>(DetectorRegistry.defaultTypes())
                 : new ArrayList<>(props.getDetectors());
 
-        var kvCfg = KVPatternConfig.of(props.getLogs().getKeyAllowlist(), props.getLogs().getKeyBlocklist());
+        var kvCfg = KVPatternConfig.of(
+                props.getLogs().getKeyAllowlist(), props.getLogs().getKeyBlocklist());
         var detectors = registry.build(types, kvCfg);
 
         // mode → action
@@ -66,20 +69,19 @@ public class PuriflowAutoConfiguration {
         return new Object();
     }
 
-    private void wrapLogger(Logger logger,
-                            List<Detector> detectors,
-                            Action action,
-                            Reporter reporter,
-                            PuriflowProperties props) {
+    private void wrapLogger(
+            Logger logger, List<Detector> detectors, Action action, Reporter reporter, PuriflowProperties props) {
 
         var only = props.getLogs().getOnlyLoggers().stream()
-                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
         var ignore = props.getLogs().getIgnoreLoggers().stream()
-                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+                .map(s -> s == null ? "" : s.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
 
         // snapshot current appenders
         var toWrap = new ArrayList<Appender<ILoggingEvent>>();
-        for (Iterator<Appender<ILoggingEvent>> e = logger.iteratorForAppenders(); e.hasNext();) {
+        for (Iterator<Appender<ILoggingEvent>> e = logger.iteratorForAppenders(); e.hasNext(); ) {
             toWrap.add(e.next());
         }
 

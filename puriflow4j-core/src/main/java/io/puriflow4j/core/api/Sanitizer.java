@@ -1,14 +1,15 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.core.api;
 
 import io.puriflow4j.core.api.models.*;
 import io.puriflow4j.core.detect.Detector;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Composite sanitizer that runs all detectors and applies right-to-left replacements.
- */
+/** Composite sanitizer that runs all detectors and applies right-to-left replacements. */
 public final class Sanitizer {
 
     public record Result(String sanitized, List<Finding> findings) {}
@@ -40,7 +41,7 @@ public final class Sanitizer {
 
         for (var s : spans) {
             int start = Math.max(0, s.start());
-            int end   = Math.min(sb.length(), s.end());
+            int end = Math.min(sb.length(), s.end());
             if (end > lastEnd) continue; // skip overlaps already replaced to the right
 
             if (defaultAction == Action.MASK || defaultAction == Action.REDACT) {
@@ -52,9 +53,10 @@ public final class Sanitizer {
 
         // deduplicate findings per log record
         var uniq = findings.stream()
-                .collect(Collectors.toMap(
-                        f -> f.type()+"|"+f.action()+"|"+f.loggerName(), f -> f, (a,b)->a))
-                .values().stream().toList();
+                .collect(Collectors.toMap(f -> f.type() + "|" + f.action() + "|" + f.loggerName(), f -> f, (a, b) -> a))
+                .values()
+                .stream()
+                .toList();
 
         return new Result(sb.toString(), uniq);
     }
