@@ -42,35 +42,29 @@ subprojects {
         }
     }
 
-    // ------------------ SpotBugs ------------------
-    apply(plugin = "com.github.spotbugs")
+//    // ------------------ SpotBugs ------------------
+//    apply(plugin = "com.github.spotbugs")
+//
+//    plugins.withId("java") {
+//        configure<SpotBugsExtension> {
+//            effort.set(Effort.MAX)
+//            reportLevel.set(Confidence.LOW)
+//            excludeFilter.set(file("${rootProject.projectDir}/config/spotbugs/exclude.xml"))
+//        }
+//
+//        tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
+//            reports.create("html") {
+//                required.set(true)
+//                outputLocation.set(file("$buildDir/reports/spotbugs/${project.name}.html"))
+//            }
+//        }
+//
+//        tasks.matching { it.name == "spotbugsTest" }.configureEach { this.enabled = false }
+//
+//        tasks.named("check") { dependsOn("spotbugsMain") }
+//    }
 
-    plugins.withId("java") {
-        configure<SpotBugsExtension> {
-            effort.set(Effort.MAX)
-            reportLevel.set(Confidence.LOW)
-            excludeFilter.set(file("${rootProject.projectDir}/config/spotbugs/exclude.xml"))
-        }
-
-        tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
-            reports.create("html") {
-                required.set(true)
-                outputLocation.set(file("$buildDir/reports/spotbugs/${project.name}.html"))
-            }
-        }
-
-        tasks.matching { it.name == "spotbugsTest" }.configureEach { this.enabled = false }
-
-        tasks.named("check") { dependsOn("spotbugsMain") }
-    }
-}
-
-configure(
-        listOf(
-                project(":puriflow4j-core"),
-                project(":puriflow4j-logs-logback")
-        )
-) {
+    // ------------------ Groovy ------------------
     apply(plugin = "groovy")
 
     dependencies {

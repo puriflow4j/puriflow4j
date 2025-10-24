@@ -5,16 +5,13 @@
 package io.puriflow4j.spring;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
-import io.puriflow4j.core.api.models.*;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import io.puriflow4j.core.api.model.DetectorType;
+import io.puriflow4j.core.api.model.Mode;
+import java.util.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Maps application.yml -> puriflow4j.* */
 @ConfigurationProperties(prefix = "puriflow4j")
 public class PuriflowProperties {
 
@@ -26,43 +23,32 @@ public class PuriflowProperties {
     @Getter
     private Mode mode = Mode.MASK;
 
-    // store internally as mutable, expose as unmodifiable
     private List<DetectorType> detectors = new ArrayList<>();
 
-    // nested config bean
     private Logs logs = new Logs();
 
-    /** Return an unmodifiable view to avoid exposing internal representation. */
     public List<DetectorType> getDetectors() {
         return Collections.unmodifiableList(detectors);
     }
 
-    /** Defensive copy to avoid storing external mutable list. */
     public void setDetectors(List<DetectorType> detectors) {
         this.detectors = new ArrayList<>(Objects.requireNonNullElse(detectors, List.of()));
     }
 
-    /**
-     * Spring @ConfigurationProperties expects a mutable nested bean instance.
-     * We expose it intentionally; consumers should not mutate it directly at runtime.
-     */
-    @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP",
-            justification = "Spring @ConfigurationProperties requires a mutable nested bean; "
-                    + "the object is owned by the configuration container.")
+    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Mutable nested bean owned by Spring configuration")
     public Logs getLogs() {
         return logs;
     }
 
-    /** Defensive copy assign (or you can simply assign if only framework sets it). */
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP2",
-            justification = "Logs is a configuration holder managed by Spring; assignment is intentional.")
+            justification = "Assignment of nested config is intentional for Spring binding")
     public void setLogs(Logs logs) {
         this.logs = (logs == null) ? new Logs() : logs;
     }
 
-    /** Nested configuration for logging settings. */
+    // ---- nested: logs ----
+    @SuppressFBWarnings
     public static final class Logs {
         @Setter
         @Getter
@@ -73,36 +59,72 @@ public class PuriflowProperties {
         private List<String> keyAllowlist = new ArrayList<>();
         private List<String> keyBlocklist = new ArrayList<>();
 
+        private Errors errors = new Errors();
+
         public List<String> getOnlyLoggers() {
             return Collections.unmodifiableList(onlyLoggers);
         }
 
-        public void setOnlyLoggers(List<String> onlyLoggers) {
-            this.onlyLoggers = new ArrayList<>(Objects.requireNonNullElse(onlyLoggers, List.of()));
+        public void setOnlyLoggers(List<String> v) {
+            this.onlyLoggers = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
         }
 
         public List<String> getIgnoreLoggers() {
             return Collections.unmodifiableList(ignoreLoggers);
         }
 
-        public void setIgnoreLoggers(List<String> ignoreLoggers) {
-            this.ignoreLoggers = new ArrayList<>(Objects.requireNonNullElse(ignoreLoggers, List.of()));
+        public void setIgnoreLoggers(List<String> v) {
+            this.ignoreLoggers = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
         }
 
         public List<String> getKeyAllowlist() {
             return Collections.unmodifiableList(keyAllowlist);
         }
 
-        public void setKeyAllowlist(List<String> keyAllowlist) {
-            this.keyAllowlist = new ArrayList<>(Objects.requireNonNullElse(keyAllowlist, List.of()));
+        public void setKeyAllowlist(List<String> v) {
+            this.keyAllowlist = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
         }
 
         public List<String> getKeyBlocklist() {
             return Collections.unmodifiableList(keyBlocklist);
         }
 
-        public void setKeyBlocklist(List<String> keyBlocklist) {
-            this.keyBlocklist = new ArrayList<>(Objects.requireNonNullElse(keyBlocklist, List.of()));
+        public void setKeyBlocklist(List<String> v) {
+            this.keyBlocklist = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
+        }
+
+        public Errors getErrors() {
+            return errors;
+        }
+
+        public void setErrors(Errors e) {
+            this.errors = (e == null) ? new Errors() : e;
+        }
+    }
+
+    // ---- nested: logs.errors ----
+    public static final class Errors {
+        @Setter
+        @Getter
+        private boolean shorten = true;
+
+        @Setter
+        @Getter
+        private int maxDepth = 25; // number of app frames to show
+
+        private List<String> hidePackages =
+                new ArrayList<>(List.of("org.springframework", "com.fasterxml.jackson", "java.util.concurrent"));
+
+        @Setter
+        @Getter
+        private boolean categorize = true;
+
+        public List<String> getHidePackages() {
+            return Collections.unmodifiableList(hidePackages);
+        }
+
+        public void setHidePackages(List<String> v) {
+            this.hidePackages = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
         }
     }
 }

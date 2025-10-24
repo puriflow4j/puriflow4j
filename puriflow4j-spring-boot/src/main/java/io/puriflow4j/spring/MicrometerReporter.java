@@ -6,7 +6,7 @@ package io.puriflow4j.spring;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.puriflow4j.core.api.models.Finding;
+import io.puriflow4j.core.api.model.Finding;
 import io.puriflow4j.core.report.Reporter;
 import java.util.ArrayDeque;
 import java.util.Deque;
