@@ -1,0 +1,32 @@
+server.port: 8080
+
+puriflow4j:
+  enabled: true
+  mode: mask
+
+  detectors:
+    - email
+    - token_bearer
+    - cloud_access_key
+    - api_token_well_known
+    - basic_auth
+    - db_credential
+    - private_key
+    - credit_card
+    - password_kv
+
+  logs:
+    enabled: true
+    key-allowlist: [traceId, requestId, correlationId]
+    key-blocklist: [password, secret, apiKey, token, authorization]
+
+    errors:
+      shorten: true
+      max-depth: 7
+      hide-packages:
+        - org.springframework
+        - com.fasterxml.jackson
+        - java.util.concurrent
+      categorize: true
+
+management.endpoints.web.exposure.include: "*"

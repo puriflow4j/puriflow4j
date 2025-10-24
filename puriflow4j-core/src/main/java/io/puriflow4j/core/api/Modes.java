@@ -4,8 +4,8 @@
  */
 package io.puriflow4j.core.api;
 
-import io.puriflow4j.core.api.models.Action;
-import io.puriflow4j.core.api.models.Mode;
+import io.puriflow4j.core.api.model.Action;
+import io.puriflow4j.core.api.model.Mode;
 
 public final class Modes {
     private Modes() {}

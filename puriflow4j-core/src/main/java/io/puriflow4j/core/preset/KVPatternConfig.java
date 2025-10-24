@@ -7,64 +7,32 @@ package io.puriflow4j.core.preset;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/** Holds allowlist/blocklist for KV keys to reduce false positives. */
-public final class KVPatternConfig {
-    private final Set<String> allow;
-    private final Set<String> block;
-
-    private KVPatternConfig(Set<String> allow, Set<String> block) {
-        this.allow = allow;
-        this.block = block;
-    }
-
+public record KVPatternConfig(Set<String> allowKeys, Set<String> blockKeys) {
     public static KVPatternConfig of(List<String> allow, List<String> block) {
-        return new KVPatternConfig(
-                normalize(allow), normalize(block == null || block.isEmpty() ? defaultsBlock() : block));
+        return new KVPatternConfig(toSet(allow), toSet(block));
     }
 
     public static KVPatternConfig defaults() {
-        return of(defaultsAllow(), defaultsBlock());
+        return new KVPatternConfig(Set.of(), Set.of());
     }
 
-    public boolean isKeyAllowed(String key) {
-        if (key == null || key.isBlank()) return false;
-        return allow.contains(norm(key));
+    private static Set<String> toSet(List<String> in) {
+        if (in == null) return Set.of();
+        return in.stream()
+                .filter(s -> s != null && !s.isBlank())
+                .map(s -> s.toLowerCase(Locale.ROOT))
+                .collect(Collectors.toUnmodifiableSet());
     }
 
-    public boolean isKeyBlocked(String key) {
-        if (key == null || key.isBlank()) return true; // if unknown, be conservative
-        return block.contains(norm(key));
+    public boolean isAllowedKey(String key) {
+        return allowKeys.contains(lc(key));
     }
 
-    private static Set<String> normalize(List<String> keys) {
-        return keys == null
-                ? Set.of()
-                : keys.stream()
-                        .filter(Objects::nonNull)
-                        .map(KVPatternConfig::norm)
-                        .collect(Collectors.toSet());
+    public boolean isBlockedKey(String key) {
+        return blockKeys.contains(lc(key));
     }
 
-    private static String norm(String s) {
-        return s.toLowerCase(Locale.ROOT).trim();
-    }
-
-    private static List<String> defaultsAllow() {
-        return List.of("traceid", "requestid", "correlationid");
-    }
-
-    private static List<String> defaultsBlock() {
-        return List.of(
-                "password",
-                "pwd",
-                "passphrase",
-                "secret",
-                "apikey",
-                "api-key",
-                "api_key",
-                "token",
-                "bearer-token",
-                "auth-token",
-                "authorization");
+    private static String lc(String s) {
+        return s == null ? "" : s.toLowerCase(Locale.ROOT);
     }
 }

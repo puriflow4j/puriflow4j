@@ -10,9 +10,11 @@ dependencies {
 
     // Do not pull Spring or backends transitively
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:3.3.4")
+    compileOnly("org.springframework.boot:spring-boot-actuator:3.3.4")
+    compileOnly("org.springframework.boot:spring-boot-actuator-autoconfigure:3.3.4")
     compileOnly("io.micrometer:micrometer-core:1.13.6")
 
-    implementation(project(":puriflow4j-logs-logback"))
+    implementation(project(":puriflow4j-logs:logback"))
     // compileOnly(project(":puriflow4j-logs-log4j2")) // future
     // compileOnly(project(":puriflow4j-logs-jul"))    // future
 
