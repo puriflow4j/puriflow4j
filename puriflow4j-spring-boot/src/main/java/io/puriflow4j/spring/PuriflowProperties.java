@@ -4,7 +4,6 @@
  */
 package io.puriflow4j.spring;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.puriflow4j.core.api.model.DetectorType;
 import io.puriflow4j.core.api.model.Mode;
 import java.util.*;
@@ -25,6 +24,7 @@ public class PuriflowProperties {
 
     private List<DetectorType> detectors = new ArrayList<>();
 
+    @Getter
     private Logs logs = new Logs();
 
     public List<DetectorType> getDetectors() {
@@ -35,20 +35,11 @@ public class PuriflowProperties {
         this.detectors = new ArrayList<>(Objects.requireNonNullElse(detectors, List.of()));
     }
 
-    @SuppressFBWarnings(value = "EI_EXPOSE_REP", justification = "Mutable nested bean owned by Spring configuration")
-    public Logs getLogs() {
-        return logs;
-    }
-
-    @SuppressFBWarnings(
-            value = "EI_EXPOSE_REP2",
-            justification = "Assignment of nested config is intentional for Spring binding")
     public void setLogs(Logs logs) {
         this.logs = (logs == null) ? new Logs() : logs;
     }
 
     // ---- nested: logs ----
-    @SuppressFBWarnings
     public static final class Logs {
         @Setter
         @Getter
@@ -59,6 +50,7 @@ public class PuriflowProperties {
         private List<String> keyAllowlist = new ArrayList<>();
         private List<String> keyBlocklist = new ArrayList<>();
 
+        @Getter
         private Errors errors = new Errors();
 
         public List<String> getOnlyLoggers() {
@@ -91,10 +83,6 @@ public class PuriflowProperties {
 
         public void setKeyBlocklist(List<String> v) {
             this.keyBlocklist = new ArrayList<>(Objects.requireNonNullElse(v, List.of()));
-        }
-
-        public Errors getErrors() {
-            return errors;
         }
 
         public void setErrors(Errors e) {

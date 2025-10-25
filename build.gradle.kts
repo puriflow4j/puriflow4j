@@ -1,12 +1,7 @@
-import com.github.spotbugs.snom.Confidence
-import com.github.spotbugs.snom.Effort
-import com.github.spotbugs.snom.SpotBugsExtension
-
 plugins {
     `java-library`
     `maven-publish`
     id("com.diffplug.spotless") version "6.25.0"
-    id("com.github.spotbugs") version "6.0.18" apply false
 }
 
 allprojects {
@@ -41,28 +36,6 @@ subprojects {
             licenseHeaderFile("${rootProject.projectDir}/config/spotless/license-header.txt")
         }
     }
-
-//    // ------------------ SpotBugs ------------------
-//    apply(plugin = "com.github.spotbugs")
-//
-//    plugins.withId("java") {
-//        configure<SpotBugsExtension> {
-//            effort.set(Effort.MAX)
-//            reportLevel.set(Confidence.LOW)
-//            excludeFilter.set(file("${rootProject.projectDir}/config/spotbugs/exclude.xml"))
-//        }
-//
-//        tasks.withType<com.github.spotbugs.snom.SpotBugsTask> {
-//            reports.create("html") {
-//                required.set(true)
-//                outputLocation.set(file("$buildDir/reports/spotbugs/${project.name}.html"))
-//            }
-//        }
-//
-//        tasks.matching { it.name == "spotbugsTest" }.configureEach { this.enabled = false }
-//
-//        tasks.named("check") { dependsOn("spotbugsMain") }
-//    }
 
     // ------------------ Groovy ------------------
     apply(plugin = "groovy")

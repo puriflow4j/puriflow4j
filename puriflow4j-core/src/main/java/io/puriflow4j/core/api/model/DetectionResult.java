@@ -4,10 +4,8 @@
  */
 package io.puriflow4j.core.api.model;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 
-@SuppressFBWarnings
 public record DetectionResult(boolean found, List<Span> spans) {
     public static DetectionResult empty() {
         return new DetectionResult(false, List.of());

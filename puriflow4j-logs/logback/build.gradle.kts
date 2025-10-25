@@ -8,7 +8,6 @@ java {
 dependencies {
     api(project(":puriflow4j-logs:core"))
     compileOnlyApi("ch.qos.logback:logback-classic:1.5.12") // do not pull logback transitively
-    compileOnly("com.github.spotbugs:spotbugs-annotations:4.8.6")
 }
 
 publishing {

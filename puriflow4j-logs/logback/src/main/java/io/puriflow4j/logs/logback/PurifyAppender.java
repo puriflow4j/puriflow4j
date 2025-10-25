@@ -7,7 +7,6 @@ package io.puriflow4j.logs.logback;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.model.Mode;
 import io.puriflow4j.core.report.Reporter;
@@ -19,7 +18,6 @@ import io.puriflow4j.logs.core.model.ThrowableView;
 import java.util.Map;
 import java.util.Objects;
 
-@SuppressFBWarnings
 public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
     private final Appender<ILoggingEvent> delegate;
     private final Reporter reporter;

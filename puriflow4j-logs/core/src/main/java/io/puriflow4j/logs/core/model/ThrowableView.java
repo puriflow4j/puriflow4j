@@ -4,10 +4,8 @@
  */
 package io.puriflow4j.logs.core.model;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.util.List;
 
-@SuppressFBWarnings
 public record ThrowableView(
         String className,
         String message,
