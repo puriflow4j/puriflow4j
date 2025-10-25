@@ -5,24 +5,29 @@ puriflow4j:
   mode: mask
 
   detectors:
-    - email
     - token_bearer
     - cloud_access_key
     - api_token_well_known
     - basic_auth
     - db_credential
+    - url_redactor
     - private_key
     - credit_card
+    - email
     - password_kv
+    - iban
+    - ip
 
   logs:
     enabled: true
     key-allowlist: [traceId, requestId, correlationId]
-    key-blocklist: [password, secret, apiKey, token, authorization]
+    key-blocklist: []
+
+    # bug: shortening works when shorten = false; categorize works when all errors are commented out
 
     errors:
       shorten: true
-      max-depth: 7
+      max-depth: 5
       hide-packages:
         - org.springframework
         - com.fasterxml.jackson

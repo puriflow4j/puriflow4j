@@ -25,7 +25,7 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
     private final Reporter reporter;
     private final MessageSanitizer msgSan;
     private final MdcSanitizer mdcSan;
-    private final ExceptionShortener shortener;              // for ThrowableProxy
+    private final ExceptionShortener shortener; // for ThrowableProxy
     private final EmbeddedStacktraceShortener embeddedShortener; // for in-message stacks
     private final Mode mode;
 
@@ -58,7 +58,6 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
         // message + mdc
         String originalMsg = event.getFormattedMessage();
         String maskedMsg = msgSan.sanitize(originalMsg, logger);
-
 
         // NEW: shorten embedded stack traces in the message text (Tomcat-style "with root cause")
         if (shortener.isShortenEnabled()) {

@@ -5,34 +5,43 @@
 package io.puriflow4j.core.preset;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
-public record KVPatternConfig(Set<String> allowKeys, Set<String> blockKeys) {
-    public static KVPatternConfig of(List<String> allow, List<String> block) {
-        return new KVPatternConfig(toSet(allow), toSet(block));
+/**
+ * @param allow store as normalized
+ * @param block store as normalized
+ */
+public record KVPatternConfig(Set<String> allow, Set<String> block) {
+
+    public static KVPatternConfig of(List<String> allowlist, List<String> blocklist) {
+        return new KVPatternConfig(normalizeAll(allowlist), normalizeAll(blocklist));
     }
 
     public static KVPatternConfig defaults() {
-        return new KVPatternConfig(Set.of(), Set.of());
+        return of(
+                List.of("traceId", "requestId", "correlationId"),
+                List.of("password", "secret", "apikey", "token", "authorization"));
     }
 
-    private static Set<String> toSet(List<String> in) {
-        if (in == null) return Set.of();
-        return in.stream()
-                .filter(s -> s != null && !s.isBlank())
-                .map(s -> s.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toUnmodifiableSet());
+    private static Set<String> normalizeAll(List<String> in) {
+        Set<String> out = new HashSet<>();
+        if (in != null) for (String k : in) if (k != null) out.add(normalizeKey(k));
+        return out;
     }
 
-    public boolean isAllowedKey(String key) {
-        return allowKeys.contains(lc(key));
+    /**
+     * Public so detectors can reuse the same normalization.
+     */
+    public static String normalizeKey(String k) {
+        if (k == null) return "";
+        // lower-case, remove separators -, _, and spaces
+        return k.toLowerCase(Locale.ROOT).replaceAll("[-_\\s]", "");
     }
 
-    public boolean isBlockedKey(String key) {
-        return blockKeys.contains(lc(key));
+    public boolean isAllowedKey(String rawKey) {
+        return allow.contains(normalizeKey(rawKey));
     }
 
-    private static String lc(String s) {
-        return s == null ? "" : s.toLowerCase(Locale.ROOT);
+    public boolean isBlockedKey(String rawKey) {
+        return block.contains(normalizeKey(rawKey));
     }
 }
