@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Puriflow4J Contributors
  * Licensed under the Apache License 2.0
  */
-package io.puriflow4j.logs.core;
+package io.puriflow4j.logs.core.shorten;
 
 import io.puriflow4j.core.api.Sanitizer;
 import java.util.ArrayList;
@@ -18,13 +18,11 @@ public final class EmbeddedStacktraceShortener {
     private final Sanitizer sanitizer;
     private final int maxDepth;
     private final Set<String> hidePackages;
-    private final boolean categorize; // reserved if you want to add [DB]/[JSON] tags here too
 
-    public EmbeddedStacktraceShortener(Sanitizer sanitizer, int maxDepth, List<String> hidePkgs, boolean categorize) {
+    public EmbeddedStacktraceShortener(Sanitizer sanitizer, int maxDepth, List<String> hidePkgs) {
         this.sanitizer = sanitizer;
         this.maxDepth = Math.max(1, maxDepth);
         this.hidePackages = Set.copyOf(hidePkgs == null ? List.of() : hidePkgs);
-        this.categorize = categorize;
     }
 
     /** Returns a possibly shortened message. If no embedded stack trace is detected, returns original. */

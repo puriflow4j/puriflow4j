@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @EnableConfigurationProperties(PuriflowProperties.class)
+@ConditionalOnProperty(prefix = "puriflow4j", name = "enabled", havingValue = "true")
 public class PuriflowBaseAutoConfiguration {
 
     @Bean
@@ -35,7 +36,6 @@ public class PuriflowBaseAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnProperty(prefix = "puriflow4j", name = "enabled", havingValue = "true", matchIfMissing = true)
     public Sanitizer sanitizer(PuriflowProperties props) {
         var registry = new DetectorRegistry();
         var types = props.getDetectors().isEmpty()

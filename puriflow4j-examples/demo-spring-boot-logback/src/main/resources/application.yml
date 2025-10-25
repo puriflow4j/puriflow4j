@@ -26,12 +26,12 @@ puriflow4j:
     # bug: shortening works when shorten = false; categorize works when all errors are commented out
 
     errors:
-      shorten: true
-      max-depth: 5
+      shorten: false
+      max-depth: 3
       hide-packages:
         - org.springframework
         - com.fasterxml.jackson
         - java.util.concurrent
-      categorize: true
+      categorize: true # works only when shorten = true
 
 management.endpoints.web.exposure.include: "*"

@@ -16,11 +16,11 @@ public class PuriflowProperties {
 
     @Setter
     @Getter
-    private boolean enabled = true;
+    private boolean enabled = false;
 
     @Setter
     @Getter
-    private Mode mode = Mode.MASK;
+    private Mode mode = Mode.DRY_RUN;
 
     private List<DetectorType> detectors = new ArrayList<>();
 
@@ -43,7 +43,7 @@ public class PuriflowProperties {
     public static final class Logs {
         @Setter
         @Getter
-        private boolean enabled = true;
+        private boolean enabled = false;
 
         private List<String> onlyLoggers = new ArrayList<>();
         private List<String> ignoreLoggers = new ArrayList<>();
@@ -94,7 +94,7 @@ public class PuriflowProperties {
     public static final class Errors {
         @Setter
         @Getter
-        private boolean shorten = true;
+        private boolean shorten = false;
 
         @Setter
         @Getter
@@ -105,7 +105,7 @@ public class PuriflowProperties {
 
         @Setter
         @Getter
-        private boolean categorize = true;
+        private boolean categorize = false;
 
         public List<String> getHidePackages() {
             return Collections.unmodifiableList(hidePackages);
