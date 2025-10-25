@@ -30,12 +30,8 @@ public class PuriflowLogbackAutoConfiguration {
         var shortener = new ExceptionShortener(
                 sanitizer, e.isShorten(), e.getMaxDepth(), e.getHidePackages(), e.isCategorize());
 
-        var embeddedShortener = new EmbeddedStacktraceShortener(
-                sanitizer,
-                e.getMaxDepth(),
-                e.getHidePackages(),
-                e.isCategorize()
-        );
+        var embeddedShortener =
+                new EmbeddedStacktraceShortener(sanitizer, e.getMaxDepth(), e.getHidePackages(), e.isCategorize());
 
         var listener = new PurifyLoggerContextListener(
                 reporter,

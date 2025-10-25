@@ -1,7 +1,10 @@
+/*
+ * Copyright (c) 2025 Puriflow4J Contributors
+ * Licensed under the Apache License 2.0
+ */
 package io.puriflow4j.logs.core;
 
 import io.puriflow4j.core.api.Sanitizer;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +35,10 @@ public final class EmbeddedStacktraceShortener {
         String[] lines = message.split("\\R");
         int firstFrame = -1;
         for (int i = 0; i < lines.length; i++) {
-            if (isFrameLine(lines[i])) { firstFrame = i; break; }
+            if (isFrameLine(lines[i])) {
+                firstFrame = i;
+                break;
+            }
         }
         if (firstFrame < 0) return message; // no embedded stack
 
@@ -49,8 +55,14 @@ public final class EmbeddedStacktraceShortener {
             String line = lines[i];
             if (isFrameLine(line)) {
                 String fqcn = extractClassName(line);
-                if (isHidden(fqcn)) { omitted++; continue; }
-                if (printed >= maxDepth) { omitted++; continue; }
+                if (isHidden(fqcn)) {
+                    omitted++;
+                    continue;
+                }
+                if (printed >= maxDepth) {
+                    omitted++;
+                    continue;
+                }
                 out.add(line); // keep as-is (we already filtered by package/depth)
                 printed++;
             } else if (isCausedBy(line)) {

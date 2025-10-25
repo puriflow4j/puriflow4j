@@ -10,6 +10,7 @@ public enum DetectorType {
     CLOUD_ACCESS_KEY, // AWS/Azure/GCP + x-api-key
     API_TOKEN_WELL_KNOWN, // Stripe/Slack/GitHub/...
     BASIC_AUTH, // Authorization: Basic base64(user:pass)
+    URL_REDACTOR,
     DB_CREDENTIAL, // DSN/JDBC/URL с user:pass and others
     PRIVATE_KEY, // -----BEGIN … PRIVATE KEY-----
     CREDIT_CARD, // Luhn
