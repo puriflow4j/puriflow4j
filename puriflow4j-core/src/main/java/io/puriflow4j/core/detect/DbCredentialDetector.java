@@ -14,36 +14,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Universal detector for database credentials appearing in connection strings and property-style
- * configurations across popular datastores.
- * <p>
- * <b>What it masks</b>
- * <ul>
- *   <li><b>URI userinfo</b>: {@code scheme://user:pass@host} (e.g., PostgreSQL/MySQL/MariaDB/SQLServer,
- *       MongoDB(+srv), Redis/Rediss, AMQP, Neo4j, ClickHouse, etc.). Also supports Redis form
- *       {@code redis://:password@host} (no username).</li>
- *   <li><b>JDBC Oracle thin</b>: {@code jdbc:oracle:thin:user/pass@host:port:sid}.</li>
- *   <li><b>Inline properties</b> in DSNs: {@code ;user=...;password=...}, {@code ?password=...},
- *       {@code User ID=...; Password=...} (ODBC-like / SQLServer-style).</li>
- * </ul>
- * <p>
- * <b>What it does not mask</b>
- * <ul>
- *   <li>Generic {@code password=...} outside of connection-string context is handled by
- *       {@link PasswordKVDetector}. This detector focuses on DB/DSN formats to avoid conflicts and
- *       keep masking semantics consistent.</li>
- * </ul>
- * <p>
- * <b>Mask style</b>: {@code [MASKED_USER]} for usernames, {@code [MASKED_PASSWORD]} for passwords.
- * <p>
- * <b>Allow/Block lists</b>:
- * <ul>
- *   <li>For KV/property matches, the detector honors {@link KVPatternConfig#isAllowedKey(String)}
- *       and {@link KVPatternConfig#isBlockedKey(String)}. URI userinfo is <i>always</i> masked.</li>
- * </ul>
- * <p>
- * <b>Performance</b>: Single-pass regex scans; linear in input length. Designed for log-time
- * sanitization with negligible overhead compared to writing large stack traces.
+ * Universal detector for DB credentials inside connection strings and DSN-like property blobs.
+ *
+ * Masks:
+ *  - URI userinfo: scheme://user[:pass]@host
+ *  - Oracle thin:  jdbc:oracle:thin:user/pass@host:port:sid
+ *  - Property-style pairs in DSN blobs (not in free text): ;user=... ;password=...
+ *  - Query params for password: ?password=... &password=...
+ *
+ * Does NOT mask:
+ *  - Generic "password=..." in free text (left to PasswordKVDetector).
  */
 public final class DbCredentialDetector implements Detector {
 
@@ -54,61 +34,85 @@ public final class DbCredentialDetector implements Detector {
     private final KVPatternConfig kv;
 
     public DbCredentialDetector(KVPatternConfig kv) {
-        this.kv = kv;
+        this.kv = (kv == null) ? KVPatternConfig.defaults() : kv;
     }
 
-    /** URI userinfo: scheme://userinfo@  (userinfo = user:pass | :pass | user) */
-    private static final Pattern URI_USERINFO = Pattern.compile("(?i)\\b([a-z][a-z0-9+.-]*://)([^@/\\s]+)@");
+    /** URI userinfo: scheme://userinfo@  (userinfo = user:pass | :pass | user)
+     *  Tightened: disallow ';', '?', '#', '&', '=' inside userinfo to avoid matching DSN property segments.
+     */
+    private static final Pattern URI_USERINFO = Pattern.compile("(?i)\\b([a-z][a-z0-9+.-]*://)([^@/\\s;?&#=]+)@");
 
-    /** Oracle thin JDBC with user/pass segment: jdbc:oracle:thin:user/pass@host:port:sid */
+    /** jdbc:oracle:thin:user/pass@... */
     private static final Pattern ORACLE_THIN_USERPASS = Pattern.compile("(?i)\\b(jdbc:oracle:thin:)([^@\\s]+)@");
 
-    /** Property-style user keys: ;user=... , ?user=... , &user=... , 'User ID=...' etc. */
+    /**
+     * Property user key outside of query. Two capture groups:
+     *  (1) key  (2) value
+     * Preceded by start/whitespace/&/; to avoid mid-token matches.
+     */
     private static final Pattern PROP_USER =
-            Pattern.compile("(?i)([;?&\\s\\p{Zs}]|^)\\s*(user|username|user\\s*id|uid)\\s*=\\s*([^;?&\\s]+)");
+            Pattern.compile("(?i)(?:(?<=^)|(?<=[\\s;&]))(user|username|user\\s*id|uid)\\s*=\\s*([^;?&\\s]+)");
 
-    /** Property-style password keys: ;password=... , ?password=... , &password=... , 'Password=...' etc. */
+    /**
+     * Property password key outside of query. Two capture groups:
+     *  (1) key  (2) value
+     */
     private static final Pattern PROP_PASS =
-            Pattern.compile("(?i)([;?&\\s\\p{Zs}]|^)\\s*(password|pwd|pass|secret|passphrase)\\s*=\\s*([^;?&\\s]+)");
+            Pattern.compile("(?i)(?:(?<=^)|(?<=[\\s;&]))(password|pwd|pass|secret|passphrase)\\s*=\\s*([^;?&\\s]+)");
 
-    /** Query-param-only password (redundant to PROP_PASS but explicit for clarity). */
+    /** Query-string passwords (?password=... or &password=...), groups: (2)=key, (3)=value */
     private static final Pattern QUERY_PASS = Pattern.compile("(?i)([?&])(password|pwd|pass|secret)=([^&\\s]+)");
 
     @Override
     public DetectionResult detect(String s) {
         if (s == null || s.isEmpty()) return DetectionResult.empty();
 
-        List<DetectionResult.Span> spans = new ArrayList<>();
+        final List<DetectionResult.Span> spans = new ArrayList<>();
 
-        // 1) Generic URI userinfo: scheme://user[:pass]@...
-        Matcher mu = URI_USERINFO.matcher(s);
-        while (mu.find()) {
-            int userinfoStart = mu.start(2);
-            int userinfoEnd = mu.end(2);
-            String userinfo = s.substring(userinfoStart, userinfoEnd);
+        // 1) Generic URI userinfo: scheme://user[:pass]@host
+        // Replace the old URI_USERINFO matcher block with this manual scan:
+        int from = 0;
+        while (true) {
+            // find scheme://
+            int schemeIdx = indexOfScheme(s, from);
+            if (schemeIdx < 0) break;
+            int authorityStart = schemeIdx; // immediately after "://"
 
-            int colon = userinfo.indexOf(':');
-            if (colon >= 0) {
-                if (colon > 0) {
-                    // mask username
-                    spans.add(new DetectionResult.Span(userinfoStart, userinfoStart + colon, TYPE, MASK_USER));
+            // find end of authority (before path/query/params or whitespace)
+            int authorityEnd = findAuthorityEnd(s, authorityStart);
+
+            // find the LAST '@' inside authority
+            int at = s.lastIndexOf('@', authorityEnd - 1);
+            if (at > authorityStart) {
+                // we have userinfo between authorityStart (inclusive) and at (exclusive)
+                String userinfo = s.substring(authorityStart, at);
+                int colon = userinfo.indexOf(':');
+                if (colon >= 0) {
+                    // user:pass
+                    int userStart = authorityStart;
+                    int userEnd = authorityStart + colon;
+                    int passStart = userEnd + 1;
+                    int passEnd = at;
+                    if (userEnd > userStart) {
+                        spans.add(new DetectionResult.Span(userStart, userEnd, TYPE, MASK_USER));
+                    }
+                    if (passEnd > passStart) {
+                        spans.add(new DetectionResult.Span(passStart, passEnd, TYPE, MASK_PASS));
+                    }
+                } else {
+                    // only user
+                    spans.add(new DetectionResult.Span(authorityStart, at, TYPE, MASK_USER));
                 }
-                if (colon + 1 < userinfo.length()) {
-                    // mask password (redis://:password@host case included)
-                    spans.add(new DetectionResult.Span(userinfoStart + colon + 1, userinfoEnd, TYPE, MASK_PASS));
-                }
-            } else {
-                // only username present → still mask
-                spans.add(new DetectionResult.Span(userinfoStart, userinfoEnd, TYPE, MASK_USER));
             }
+
+            from = authorityEnd; // continue scanning after this authority segment
         }
 
-        // 2) Oracle thin with user/pass before '@'
-        Matcher mo = ORACLE_THIN_USERPASS.matcher(s);
-        while (mo.find()) {
-            int credStart = mo.start(2);
-            int credEnd = mo.end(2);
-            String creds = s.substring(credStart, credEnd); // "user/pass" or just "user"
+        // 2) jdbc:oracle:thin:user/pass@...
+        for (Matcher m = ORACLE_THIN_USERPASS.matcher(s); m.find(); ) {
+            int credStart = m.start(2);
+            int credEnd = m.end(2);
+            String creds = s.substring(credStart, credEnd);
             int slash = creds.indexOf('/');
             if (slash >= 0) {
                 if (slash > 0) {
@@ -122,35 +126,99 @@ public final class DbCredentialDetector implements Detector {
             }
         }
 
-        // 3) Property-style user/password (SQLServer/JDBC/ODBC-like)
-        Matcher mpUser = PROP_USER.matcher(s);
-        while (mpUser.find()) {
-            String key = normalizeKey(mpUser.group(2));
-            if (!kv.isAllowedKey(key)) {
-                spans.add(new DetectionResult.Span(mpUser.start(3), mpUser.end(3), TYPE, MASK_USER));
+        // Heuristic: only treat property pairs if the string is likely a DSN/config (not free text).
+        if (isLikelyDsnContext(s)) {
+            // 3a) user=...
+            for (Matcher m = PROP_USER.matcher(s); m.find(); ) {
+                // Skip if inside query (just in case):
+                int i = m.start();
+                char prev = (i > 0) ? s.charAt(i - 1) : '\0';
+                if (prev == '?' || prev == '&') continue;
+
+                String key = normalizeKey(m.group(1));
+                if (!kv.isAllowedKey(key)) {
+                    spans.add(new DetectionResult.Span(m.start(2), m.end(2), TYPE, MASK_USER));
+                }
             }
-        }
-        Matcher mpPass = PROP_PASS.matcher(s);
-        while (mpPass.find()) {
-            String key = normalizeKey(mpPass.group(2));
-            if (!kv.isAllowedKey(key) || kv.isBlockedKey(key)) {
-                spans.add(new DetectionResult.Span(mpPass.start(3), mpPass.end(3), TYPE, MASK_PASS));
+            // 3b) password=...
+            for (Matcher m = PROP_PASS.matcher(s); m.find(); ) {
+                int i = m.start();
+                char prev = (i > 0) ? s.charAt(i - 1) : '\0';
+                if (prev == '?' || prev == '&') continue;
+
+                String key = normalizeKey(m.group(1));
+                if (!kv.isAllowedKey(key) || kv.isBlockedKey(key)) {
+                    spans.add(new DetectionResult.Span(m.start(2), m.end(2), TYPE, MASK_PASS));
+                }
             }
         }
 
-        // 4) Query-param-only password (?password=... or &password=...)
-        Matcher mq = QUERY_PASS.matcher(s);
-        while (mq.find()) {
-            String key = normalizeKey(mq.group(2));
+        // 4) Query-string password always considered DSN-ish
+        for (Matcher m = QUERY_PASS.matcher(s); m.find(); ) {
+            String key = normalizeKey(m.group(2));
             if (!kv.isAllowedKey(key) || kv.isBlockedKey(key)) {
-                spans.add(new DetectionResult.Span(mq.start(3), mq.end(3), TYPE, MASK_PASS));
+                spans.add(new DetectionResult.Span(m.start(3), m.end(3), TYPE, MASK_PASS));
             }
         }
 
         return spans.isEmpty() ? DetectionResult.empty() : new DetectionResult(true, List.copyOf(spans));
     }
 
+    /** Cheap heuristic: looks like a DSN/config, not free text. */
+    private static boolean isLikelyDsnContext(String s) {
+        String low = s.toLowerCase(Locale.ROOT);
+        if (low.contains("://") || low.contains("jdbc:")) return true;
+        // ODBC/SQLServer-ish hints or multiple ';' k=v pairs
+        if (low.contains("server=")
+                || low.contains("data source=")
+                || low.contains("addr=")
+                || low.contains("address=")) return true;
+        int semi = 0;
+        for (int i = 0; i < s.length(); i++) if (s.charAt(i) == ';') semi++;
+        return semi >= 2;
+    }
+
     private static String normalizeKey(String k) {
         return (k == null) ? "" : k.toLowerCase(Locale.ROOT).replaceAll("\\s+", "");
+    }
+
+    // Finds start index of authority right after "scheme://", or -1 if not found.
+    private static int indexOfScheme(String s, int from) {
+        for (int i = from; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // cheap check for "://"
+            if (c == ':' && i + 2 < s.length() && s.charAt(i + 1) == '/' && s.charAt(i + 2) == '/') {
+                // ensure valid scheme (RFC 3986-ish): [a-z][a-z0-9+.-]*
+                int j = i - 1;
+                if (j >= 0 && isSchemeChar(s.charAt(j))) {
+                    // backtrack to the start of scheme
+                    while (j - 1 >= 0 && isSchemeChar(s.charAt(j - 1))) j--;
+                    // authority starts after "://"
+                    return i + 3;
+                }
+            }
+        }
+        return -1;
+    }
+
+    private static boolean isSchemeChar(char ch) {
+        return (ch >= 'a' && ch <= 'z')
+                || (ch >= 'A' && ch <= 'Z')
+                || (ch >= '0' && ch <= '9')
+                || ch == '+'
+                || ch == '.'
+                || ch == '-';
+    }
+
+    // Authority ends at '/', ';', '?', '#', '&', whitespace, or end of string.
+    private static int findAuthorityEnd(String s, int start) {
+        int i = start, n = s.length();
+        for (; i < n; i++) {
+            char ch = s.charAt(i);
+            if (ch == '/' || ch == ';' || ch == '?' || ch == '#' || ch == '&' || Character.isWhitespace(ch)) {
+                break;
+            }
+        }
+        return i;
     }
 }
