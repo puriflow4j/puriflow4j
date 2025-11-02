@@ -1,0 +1,16 @@
+<configuration>
+    <!-- In-memory appender to capture logs for assertions -->
+    <appender name="MEM" class="ch.qos.logback.core.read.ListAppender" />
+
+    <!-- Optional console for local debugging -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %-5level [%thread] %logger - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="MEM"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

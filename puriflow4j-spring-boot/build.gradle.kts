@@ -21,6 +21,12 @@ dependencies {
     compileOnly("org.slf4j:slf4j-api:2.0.13")
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
+
+    testImplementation("io.micrometer:micrometer-core:1.13.6")
+   // testImplementation("org.springframework.boot:spring-boot-autoconfigure:3.3.4")
+
+    testImplementation("org.springframework.boot:spring-boot-test:3.3.4")
+    testImplementation("org.springframework.boot:spring-boot-test-autoconfigure:3.3.4")
 }
 
 publishing {

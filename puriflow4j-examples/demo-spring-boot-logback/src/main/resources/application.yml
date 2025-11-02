@@ -32,6 +32,6 @@ puriflow4j:
         - org.springframework
         - com.fasterxml.jackson
         - java.util.concurrent
-      categorize: true # works only when shorten = true
+      categorize: true
 
 management.endpoints.web.exposure.include: "*"
