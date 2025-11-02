@@ -12,6 +12,13 @@ class TokenDetectorSpec extends Specification {
 
     def det = new TokenDetector()
 
+    // A realistic JWT-like example (header starts with eyJ, plenty of length & digits)
+    private static final String LONG_JWT = (
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9." +
+                    "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmJmIjoxNjAsImlhdCI6MTUxNjIzOTAyMn0." +
+                    "SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+    )
+
     def "masks Bearer token in Authorization header"() {
         given:
         def msg = "Authorization: Bearer eyJ.hdr.pay.sig"
@@ -44,7 +51,7 @@ class TokenDetectorSpec extends Specification {
 
     def "masks bare JWT-like token (no header/key)"() {
         given:
-        def msg = "got: eyJ.hdr.pay.sig ; continue"
+        def msg = "got: ${LONG_JWT} ; continue"
 
         when:
         def res = det.detect(msg)
@@ -53,6 +60,39 @@ class TokenDetectorSpec extends Specification {
         res.found()
         res.spans().size() == 1
         applySpans(msg, res) == "got: [MASKED_TOKEN] ; continue"
+    }
+
+    def "multiple tokens in one line are all masked and spans are ordered/non-overlapping"() {
+        given:
+        def t1 = LONG_JWT
+        def t2 = LONG_JWT.reverse() // just to differ; still long with dots
+        def msg = "t1=$t1; Authorization: Bearer $t2; end"
+
+        when:
+        def res = det.detect(msg)
+
+        then:
+        res.found()
+        // 2 matches: bare t1 + contextual Bearer t2
+        res.spans().size() == 2
+
+        and:
+        def spans = new ArrayList<>(res.spans())
+        spans.sort { a, b -> (a.start() <=> b.start()) ?: (a.end() <=> b.end()) }
+        for (int i = 1; i < spans.size(); i++) {
+            assert spans[i - 1].end() <= spans[i].start()
+        }
+
+        and:
+        applySpans(msg, res) == "t1=[MASKED_TOKEN]; Authorization: Bearer [MASKED_TOKEN]; end"
+    }
+
+    def "token next to punctuation is still detected thanks to boundaries"() {
+        given:
+        def msg = "(${LONG_JWT}), next"
+
+        expect:
+        applySpans(msg, det.detect(msg)) == "([MASKED_TOKEN]), next"
     }
 
     def "does not leave '.sig' tail unmasked (regression)"() {
@@ -68,44 +108,6 @@ class TokenDetectorSpec extends Specification {
         // убедимся, что в выходе точно нет кусочков исходного токена
         !applySpans(msg, res).contains(".sig")
         !applySpans(msg, res).contains("eyJ.")
-    }
-
-    def "multiple tokens in one line are all masked and spans are ordered/non-overlapping"() {
-        given:
-        def t1 = "eyA.bb.ccc"
-        def t2 = "aaa.bbb.ccc.ddd"
-        def msg = "t1=$t1; Authorization: Bearer $t2; end"
-
-        when:
-        def res = det.detect(msg)
-
-        then:
-        res.found()
-        res.spans().size() == 2
-
-        and: "ordered by start"
-        def starts = res.spans()*.start()
-        def startsSorted = new ArrayList<>(starts)
-        Collections.sort(startsSorted)
-        starts == startsSorted
-
-        and: "no overlaps"
-        def spans = new ArrayList<>(res.spans())
-        spans.sort { a, b -> (a.start() <=> b.start()) ?: (a.end() <=> b.end()) }
-        for (int i = 1; i < spans.size(); i++) {
-            assert spans[i - 1].end() <= spans[i].start()
-        }
-
-        and: "rendered"
-        applySpans(msg, res) == "t1=[MASKED_TOKEN]; Authorization: Bearer [MASKED_TOKEN]; end"
-    }
-
-    def "token next to punctuation is still detected thanks to boundaries"() {
-        given:
-        def msg = "(eyJ.hdr.pay.sig), next"
-
-        expect:
-        applySpans(msg, det.detect(msg)) == "([MASKED_TOKEN]), next"
     }
 
     def "no matches for non-token strings"() {
