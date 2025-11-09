@@ -6,7 +6,6 @@ package io.puriflow4j.logs.log4j2;
 
 import io.puriflow4j.logs.core.model.StackFrameView;
 import io.puriflow4j.logs.core.model.ThrowableView;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,15 +17,8 @@ final class ThrowableViewAdapter {
         if (t == null) return null;
         List<StackFrameView> frames = new ArrayList<>();
         for (StackTraceElement el : t.getStackTrace()) {
-            frames.add(new StackFrameView(
-                    el.getClassName(), el.getMethodName(), el.getFileName(), el.getLineNumber()
-            ));
+            frames.add(new StackFrameView(el.getClassName(), el.getMethodName(), el.getFileName(), el.getLineNumber()));
         }
-        return new ThrowableView(
-                t.getClass().getName(),
-                t.getMessage(),
-                List.copyOf(frames),
-                toView(t.getCause())
-        );
+        return new ThrowableView(t.getClass().getName(), t.getMessage(), List.copyOf(frames), toView(t.getCause()));
     }
 }

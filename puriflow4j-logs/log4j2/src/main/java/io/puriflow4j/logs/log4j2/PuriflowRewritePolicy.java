@@ -13,15 +13,13 @@ import io.puriflow4j.logs.core.sanitize.MdcSanitizer;
 import io.puriflow4j.logs.core.sanitize.MessageSanitizer;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.logging.log4j.core.appender.rewrite.RewritePolicy;
 import org.apache.logging.log4j.core.impl.ContextDataFactory;
 import org.apache.logging.log4j.core.impl.Log4jLogEvent;
 import org.apache.logging.log4j.message.SimpleMessage;
-
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * Log4j2 RewritePolicy that performs the same hygiene steps as our Logback appender:
@@ -47,8 +45,7 @@ public final class PuriflowRewritePolicy implements RewritePolicy {
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
             ExceptionClassifier classifier,
-            Mode mode
-    ) {
+            Mode mode) {
         this.reporter = Objects.requireNonNull(reporter, "reporter");
         this.msgSan = new MessageSanitizer(Objects.requireNonNull(sanitizer, "sanitizer"));
         this.mdcSan = new MdcSanitizer(sanitizer);
@@ -63,13 +60,13 @@ public final class PuriflowRewritePolicy implements RewritePolicy {
         final String logger = source.getLoggerName();
 
         // 1) sanitize formatted message
-        final String originalMsg = source.getMessage() != null ? source.getMessage().getFormattedMessage() : null;
+        final String originalMsg =
+                source.getMessage() != null ? source.getMessage().getFormattedMessage() : null;
         String maskedMsg = msgSan.sanitize(originalMsg, logger);
 
         // 2) sanitize MDC / context data
-        Map<String, String> originalMdc = source.getContextData() != null
-                ? source.getContextData().toMap()
-                : Map.of();
+        Map<String, String> originalMdc =
+                source.getContextData() != null ? source.getContextData().toMap() : Map.of();
         Map<String, String> maskedMdc = mdcSan.sanitize(originalMdc, logger);
 
         // 3) error/shortening options

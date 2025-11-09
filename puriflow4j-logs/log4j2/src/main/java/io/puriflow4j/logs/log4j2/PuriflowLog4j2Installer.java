@@ -10,6 +10,9 @@ import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
@@ -18,10 +21,6 @@ import org.apache.logging.log4j.core.appender.rewrite.RewriteAppender;
 import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * High-performance wiring for Log4j2:
@@ -35,10 +34,10 @@ import java.util.Objects;
  */
 public final class PuriflowLog4j2Installer {
 
-    private static final int     DEFAULT_BUFFER_SIZE              = 8192;
-    private static final boolean DEFAULT_BLOCKING                 = true;
-    private static final long    DEFAULT_SHUTDOWN_TIMEOUT_MILLIS  = 5000L;
-    private static final boolean DEFAULT_INCLUDE_LOCATION         = false;
+    private static final int DEFAULT_BUFFER_SIZE = 8192;
+    private static final boolean DEFAULT_BLOCKING = true;
+    private static final long DEFAULT_SHUTDOWN_TIMEOUT_MILLIS = 5000L;
+    private static final boolean DEFAULT_INCLUDE_LOCATION = false;
 
     private final Reporter reporter;
     private final Sanitizer sanitizer;
@@ -53,8 +52,7 @@ public final class PuriflowLog4j2Installer {
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
             ExceptionClassifier classifier,
-            Mode mode
-    ) {
+            Mode mode) {
         this.reporter = Objects.requireNonNull(reporter);
         this.sanitizer = Objects.requireNonNull(sanitizer);
         this.shortener = Objects.requireNonNull(shortener);
@@ -81,32 +79,26 @@ public final class PuriflowLog4j2Installer {
             if (original instanceof AsyncAppender) continue;
 
             // 1) Policy for message/MDC/exception (STRICT, classification, shortening)
-            final PuriflowRewritePolicy policy = new PuriflowRewritePolicy(
-                    reporter, sanitizer, shortener, embeddedShortener, classifier, mode
-            );
+            final PuriflowRewritePolicy policy =
+                    new PuriflowRewritePolicy(reporter, sanitizer, shortener, embeddedShortener, classifier, mode);
 
             // 2) Create RewriteAppender that targets the original appender by name.
             //    Signature: createAppender(name, ignoreExceptions("true"/"false"), AppenderRef[], policy, config)
             final String rewriteName = "PURIFY_WRAPPER_" + origName;
-            final AppenderRef[] rewriteRefs = new AppenderRef[] {
-                    AppenderRef.createAppenderRef(origName, null, null)
-            };
+            final AppenderRef[] rewriteRefs = new AppenderRef[] {AppenderRef.createAppenderRef(origName, null, null)};
             final RewriteAppender rewrite = RewriteAppender.createAppender(
                     /* name              */ rewriteName,
                     /* ignoreExceptions  */ "true",
                     /* appenderRefs      */ rewriteRefs,
                     /* config            */ cfg,
                     /* rewritePolicy     */ policy,
-                    /* filter            */ null
-            );
+                    /* filter            */ null);
             rewrite.start();
             cfg.addAppender(rewrite);
 
             // 3) Create AsyncAppender that targets the rewrite wrapper.
             final String asyncName = "PURIFY_ASYNC_" + origName;
-            final AppenderRef[] asyncRefs = new AppenderRef[] {
-                    AppenderRef.createAppenderRef(rewriteName, null, null)
-            };
+            final AppenderRef[] asyncRefs = new AppenderRef[] {AppenderRef.createAppenderRef(rewriteName, null, null)};
 
             final AsyncAppender async = AsyncAppender.newBuilder()
                     .setName(asyncName)

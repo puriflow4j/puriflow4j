@@ -5,7 +5,6 @@
 package io.puriflow4j.logs.core.sanitize;
 
 import io.puriflow4j.core.api.Sanitizer;
-
 import java.util.*;
 
 /**
@@ -44,9 +43,8 @@ public final class MdcSanitizer {
 
             // (3) Extract sanitized value part
             int eq = maskedCombined.indexOf('=');
-            String maskedVal = (eq >= 0 && eq + 1 < maskedCombined.length())
-                    ? maskedCombined.substring(eq + 1)
-                    : maskedCombined;
+            String maskedVal =
+                    (eq >= 0 && eq + 1 < maskedCombined.length()) ? maskedCombined.substring(eq + 1) : maskedCombined;
 
             out.put(key, maskedVal);
         }

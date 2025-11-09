@@ -36,12 +36,7 @@ public class PuriflowLog4j2AutoConfiguration {
         var embeddedShortener = new EmbeddedStacktraceShortener(sanitizer, e.getMaxDepth(), e.getHidePackages());
 
         var installer = new PuriflowLog4j2Installer(
-                reporter,
-                sanitizer,
-                shortener,
-                embeddedShortener,
-                classifier,
-                props.getMode());
+                reporter, sanitizer, shortener, embeddedShortener, classifier, props.getMode());
 
         installer.install(); // perform async+rewrite wrapping
 
