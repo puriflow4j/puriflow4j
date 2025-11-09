@@ -10,6 +10,9 @@ import java.util.regex.Pattern
 
 class MdcSanitizerSpec extends Specification {
 
+    // Comment (EN): Minimal detector used by tests:
+    //  - Prefer key=value masking for keys 'secret' or 'password' (mask only the value part).
+    //  - If no key=value matched, mask bare 'secret' substrings in the text.
     private Sanitizer mkSanitizer() {
         Detector det = new Detector() {
             private final Pattern P_KV = Pattern.compile("(?i)\\b(secret|password)\\s*[:=]\\s*([^\\s,;]+)")
@@ -40,24 +43,41 @@ class MdcSanitizerSpec extends Specification {
                 return spans.isEmpty() ? DetectionResult.empty() : new DetectionResult(true, List.copyOf(spans))
             }
         }
-        return new Sanitizer(List.of(det), Action.MASK)
+        new Sanitizer(List.of(det), Action.MASK)
     }
 
-    def "returns same map instance for null or empty MDC"() {
+    def "returns empty immutable map for null or empty MDC"() {
         given:
         def san = new MdcSanitizer(mkSanitizer())
 
-        expect:
-        san.sanitize(null, "demo") == null
-        san.sanitize([:], "demo").isEmpty()
+        when: "null MDC"
+        def outNull = san.sanitize(null, "demo")
+
+        then: "we return empty immutable map (not null)"
+        outNull != null
+        outNull.isEmpty()
+        when:
+        outNull.put("x", "y")
+        then:
+        thrown(UnsupportedOperationException)
+
+        when: "empty MDC"
+        def outEmpty = san.sanitize([:], "demo")
+
+        then:
+        outEmpty.isEmpty()
+        when:
+        outEmpty.put("x", "y")
+        then:
+        thrown(UnsupportedOperationException)
     }
 
-    def "sanitizes values based on configured sanitizer"() {
+    def "sanitizes MDC using existing detectors (KV takes precedence over bare)"() {
         given:
         def san = new MdcSanitizer(mkSanitizer())
         def mdc = [
                 user     : "alice",
-                password : "supersecret",
+                password : "supersecret", // will be processed as "password=supersecret" -> value becomes [MASKED]
                 mode     : "test"
         ]
 
@@ -66,19 +86,21 @@ class MdcSanitizerSpec extends Specification {
 
         then:
         out.get("user") == "alice"
-        out.get("password") == "super[MASKED]"
+        // Comment (EN): KV detector wins => "[MASKED]" (not "super[MASKED]")
+        out.get("password") == "[MASKED]"
         out.get("mode") == "test"
-        // original map is untouched
+
+        and: "original map is untouched"
         mdc.get("password") == "supersecret"
     }
 
-    def "preserves null or empty values"() {
+    def "preserves null or empty values; masks KV when present"() {
         given:
         def san = new MdcSanitizer(mkSanitizer())
         def mdc = [
                 key1: "",
                 key2: null,
-                key3: "secret=abc"
+                key3: "secret=abc" // processed as "key3=secret=abc" -> masks value after the last '=' span
         ]
 
         when:
@@ -87,6 +109,7 @@ class MdcSanitizerSpec extends Specification {
         then:
         out.get("key1") == ""
         out.get("key2") == null
+        // Comment (EN): Expected value part becomes "[MASKED]"
         out.get("key3") == "secret=[MASKED]"
     }
 
