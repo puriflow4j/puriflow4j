@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
 io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration,\
-io.puriflow4j.spring.config.PuriflowLogbackAutoConfiguration
+io.puriflow4j.spring.config.PuriflowLogbackAutoConfiguration,\
+io.puriflow4j.spring.config.PuriflowLog4j2AutoConfiguration

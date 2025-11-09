@@ -12,7 +12,6 @@ import io.puriflow4j.core.api.Sanitizer
 import io.puriflow4j.core.api.model.Action
 import io.puriflow4j.core.api.model.DetectionResult
 import io.puriflow4j.core.api.model.Mode
-import io.puriflow4j.core.report.Reporter
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener
 import io.puriflow4j.logs.core.shorten.ExceptionShortener
@@ -48,8 +47,6 @@ class PurifyLoggerContextListenerSpec extends Specification {
         // твой продакшен-ctor ожидает (Sanitizer, int, List<String>)
         new EmbeddedStacktraceShortener(san, 5, List.of("java.", "org.slf4j"))
     }
-
-    private Reporter mkReporter() { Mock(Reporter) }
 
     private ExceptionClassifier mkClassifier() {
         Mock(ExceptionClassifier) { 0 * _ }
@@ -153,7 +150,6 @@ class PurifyLoggerContextListenerSpec extends Specification {
         and:
         def san = mkSanitizer()
         def listener = new PurifyLoggerContextListener(
-                mkReporter(),
                 san,
                 mkShortener(san),
                 mkEmbedded(san),
@@ -190,7 +186,7 @@ class PurifyLoggerContextListenerSpec extends Specification {
         def base = namedAppender("BASE")
 
         def san = mkSanitizer()
-        def wrapper = new PurifyAppender(base, mkReporter(), san, mkShortener(san), mkEmbedded(san), mkClassifier(), Mode.MASK)
+        def wrapper = new PurifyAppender(base, san, mkShortener(san), mkEmbedded(san), mkClassifier(), Mode.MASK)
         wrapper.setContext(ctx)
         wrapper.setName("PURIFY_WRAPPER_BASE")
         wrapper.start()
@@ -198,7 +194,6 @@ class PurifyLoggerContextListenerSpec extends Specification {
 
         and:
         def listener = new PurifyLoggerContextListener(
-                mkReporter(),
                 san,
                 mkShortener(san),
                 mkEmbedded(san),

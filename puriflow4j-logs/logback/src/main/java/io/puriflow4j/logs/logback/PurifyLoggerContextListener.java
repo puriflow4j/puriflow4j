@@ -12,7 +12,6 @@ import ch.qos.logback.classic.spi.LoggerContextListener;
 import ch.qos.logback.core.Appender;
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.model.Mode;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
@@ -26,8 +25,6 @@ import java.util.Objects;
  * and repeats wrapping on LoggerContext.reset().
  */
 public final class PurifyLoggerContextListener implements LoggerContextListener {
-
-    private final Reporter reporter;
     private final Sanitizer sanitizer;
     private final ExceptionShortener shortener;
     private final EmbeddedStacktraceShortener embeddedShortener;
@@ -37,7 +34,6 @@ public final class PurifyLoggerContextListener implements LoggerContextListener 
     private final List<String> ignore; // lowercase names
 
     public PurifyLoggerContextListener(
-            Reporter reporter,
             Sanitizer sanitizer,
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
@@ -45,7 +41,6 @@ public final class PurifyLoggerContextListener implements LoggerContextListener 
             Mode mode,
             List<String> onlyLoggers,
             List<String> ignoreLoggers) {
-        this.reporter = Objects.requireNonNull(reporter);
         this.sanitizer = Objects.requireNonNull(sanitizer);
         this.shortener = Objects.requireNonNull(shortener);
         this.embeddedShortener = Objects.requireNonNull(embeddedShortener);
@@ -113,8 +108,7 @@ public final class PurifyLoggerContextListener implements LoggerContextListener 
 
     private void wrapAtLogger(Logger logger, Appender<ILoggingEvent> app) {
         logger.detachAppender(app);
-        PurifyAppender wrapper =
-                new PurifyAppender(app, reporter, sanitizer, shortener, embeddedShortener, classifier, mode);
+        PurifyAppender wrapper = new PurifyAppender(app, sanitizer, shortener, embeddedShortener, classifier, mode);
 
         wrapper.setContext(logger.getLoggerContext());
         wrapper.setName("PURIFY_WRAPPER_" + app.getName());
@@ -132,7 +126,7 @@ public final class PurifyLoggerContextListener implements LoggerContextListener 
             async.detachAppender(child.getName());
 
             PurifyAppender wrapper =
-                    new PurifyAppender(child, reporter, sanitizer, shortener, embeddedShortener, classifier, mode);
+                    new PurifyAppender(child, sanitizer, shortener, embeddedShortener, classifier, mode);
 
             wrapper.setContext(logger.getLoggerContext());
             wrapper.setName("PURIFY_WRAPPER_" + child.getName());

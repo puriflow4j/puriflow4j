@@ -1,108 +1,64 @@
 package io.puriflow4j.spring.config
 
-import io.micrometer.core.instrument.MeterRegistry
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
-import io.puriflow4j.core.api.Sanitizer
-import io.puriflow4j.core.report.Reporter
-import io.puriflow4j.spring.MicrometerReporter
-import io.puriflow4j.spring.PuriflowEndpoint
+import io.puriflow4j.logs.core.categorize.ExceptionClassifier
+import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import spock.lang.Specification
 
 class PuriflowBaseAutoConfigurationSpec extends Specification {
 
-    // Reusable runner preloaded with our auto-config
+    // Comment (EN): Load ONLY the base auto-config; no manual beans with same names.
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(PuriflowBaseAutoConfiguration))
-            .withPropertyValues(
-                    "puriflow4j.enabled=true" // gate for the auto-config
-            )
-            .withUserConfiguration(TestMeters)
+            .withUserConfiguration(TestSupport)
 
     @Configuration
-    static class TestMeters {
-        @Bean MeterRegistry meterRegistry() {
-            // Real Micrometer registry to satisfy @ConditionalOnClass & injection
-            return new SimpleMeterRegistry()
-        }
-    }
-
-    def "creates MicrometerReporter, Reporter (same instance) and Sanitizer when enabled and MeterRegistry present"() {
-        expect:
-        runner.run { ctx ->
-            // MicrometerReporter bean exists (by name is fine here)
-            assert ctx.containsBean("micrometerReporter")
-            assert ctx.getBean("micrometerReporter") instanceof MicrometerReporter
-
-            // Reporter exists (by type) and is the same instance as MicrometerReporter
-            def reporterBeans = ctx.getBeansOfType(Reporter)
-            assert reporterBeans.size() == 1
-            def reporter = reporterBeans.values().first()
-            def micrometer = ctx.getBean(MicrometerReporter)
-            assert reporter.is(micrometer)
-
-            // Sanitizer exists
-            assert ctx.getBean(Sanitizer) != null
-        }
-    }
-
-    def "respects user-provided MicrometerReporter (not overridden)"() {
-        given:
-        def custom = new ApplicationContextRunner()
-                .withConfiguration(AutoConfigurations.of(PuriflowBaseAutoConfiguration))
-                .withPropertyValues("puriflow4j.enabled=true")
-                .withUserConfiguration(TestMeters, UserMicrometer)
-
-        expect:
-        custom.run { ctx ->
-            def fromCtx = ctx.getBean(MicrometerReporter)
-            def user = ctx.getBean("userMicrometer", MicrometerReporter)
-            assert fromCtx.is(user)       // auto-config did not create its own
-            assert ctx.getBean(Reporter).is(user) // Reporter wired to the same instance
-        }
-    }
-
-    @Configuration
-    static class UserMicrometer {
-        @Bean("userMicrometer")
-        MicrometerReporter userMicrometer(MeterRegistry registry) {
-            // user-supplied bean should win due to @ConditionalOnMissingBean
-            return new MicrometerReporter(registry, 123)
-        }
-    }
+    static class TestSupport { }
 
     def "does not create beans when puriflow4j is disabled"() {
         expect:
         new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(PuriflowBaseAutoConfiguration))
+                .withUserConfiguration(TestSupport)
                 .withPropertyValues("puriflow4j.enabled=false")
-                .withUserConfiguration(TestMeters)
                 .run { ctx ->
-                    assert !ctx.containsBean("micrometerReporter")
-                    assert !ctx.containsBean("reporter")
                     assert !ctx.containsBean("sanitizer")
-                    assert !ctx.containsBean("puriflowEndpoint")
+                    assert !ctx.containsBean("exceptionClassifierEnabled")
+                    assert !ctx.containsBean("exceptionClassifierNoop")
                 }
     }
 
-    def "creates PuriflowEndpoint when actuator endpoint is available and MicrometerReporter exists"() {
-        given:
-        // Expose web endpoints so @ConditionalOnAvailableEndpoint is satisfied
-        def withActuator = new ApplicationContextRunner()
-                .withConfiguration(AutoConfigurations.of(PuriflowBaseAutoConfiguration))
-                .withPropertyValues(
-                        "puriflow4j.enabled=true",
-                        "management.endpoints.web.exposure.include=*" // make endpoint available
-                )
-                .withUserConfiguration(TestMeters)
-
+    def "creates Sanitizer when enabled (with defaults)"() {
         expect:
-        withActuator.run { ctx ->
-            assert ctx.containsBean("puriflowEndpoint")
-            assert ctx.getBean(PuriflowEndpoint) != null
-        }
+        runner.withPropertyValues("puriflow4j.enabled=true")
+                .run { ctx ->
+                    assert ctx.containsBean("sanitizer")
+                }
+    }
+
+    def "creates heuristic ExceptionClassifier when categorize=true"() {
+        expect:
+        runner.withPropertyValues(
+                "puriflow4j.enabled=true",
+                "puriflow4j.logs.errors.categorize=true"
+        )
+                .run { ctx ->
+                    def cls = ctx.getBean(ExceptionClassifier)
+                    assert cls instanceof HeuristicExceptionClassifier
+                }
+    }
+
+    def "creates noop ExceptionClassifier by default (categorize=false)"() {
+        expect:
+        runner.withPropertyValues(
+                "puriflow4j.enabled=true",
+                "puriflow4j.logs.errors.categorize=false"
+        )
+                .run { ctx ->
+                    def cls = ctx.getBean(ExceptionClassifier)
+                    assert !(cls instanceof HeuristicExceptionClassifier)
+                }
     }
 }
