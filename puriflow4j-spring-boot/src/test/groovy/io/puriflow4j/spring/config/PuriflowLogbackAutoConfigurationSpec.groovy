@@ -1,4 +1,4 @@
-package io.puriflow4j.spring
+package io.puriflow4j.spring.config
 
 import ch.qos.logback.classic.LoggerContext
 import io.puriflow4j.core.api.Detector
@@ -9,6 +9,7 @@ import io.puriflow4j.core.report.Reporter
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier
 import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener
+import io.puriflow4j.spring.PuriflowProperties
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner

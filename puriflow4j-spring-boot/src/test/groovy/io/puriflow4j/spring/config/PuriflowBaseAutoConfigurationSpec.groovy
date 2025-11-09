@@ -1,9 +1,11 @@
-package io.puriflow4j.spring
+package io.puriflow4j.spring.config
 
 import io.micrometer.core.instrument.MeterRegistry
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import io.puriflow4j.core.api.Sanitizer
 import io.puriflow4j.core.report.Reporter
+import io.puriflow4j.spring.MicrometerReporter
+import io.puriflow4j.spring.PuriflowEndpoint
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.context.annotation.Bean

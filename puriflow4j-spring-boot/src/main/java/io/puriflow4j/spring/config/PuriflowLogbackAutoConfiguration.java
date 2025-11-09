@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Puriflow4J Contributors
  * Licensed under the Apache License 2.0
  */
-package io.puriflow4j.spring;
+package io.puriflow4j.spring.config;
 
 import ch.qos.logback.classic.LoggerContext;
 import io.puriflow4j.core.api.Sanitizer;
@@ -12,6 +12,7 @@ import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener;
+import io.puriflow4j.spring.PuriflowProperties;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.*;
@@ -19,7 +20,7 @@ import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "puriflow4j.logs", name = "enabled", havingValue = "true")
-@ConditionalOnClass(LoggerContext.class)
+@ConditionalOnClass(name = "ch.qos.logback.classic.LoggerContext")
 public class PuriflowLogbackAutoConfiguration {
 
     @Bean

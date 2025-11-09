@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Puriflow4J Contributors
  * Licensed under the Apache License 2.0
  */
-package io.puriflow4j.spring;
+package io.puriflow4j.spring.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.puriflow4j.core.api.Sanitizer;
@@ -10,6 +10,9 @@ import io.puriflow4j.core.api.model.Action;
 import io.puriflow4j.core.preset.DetectorRegistry;
 import io.puriflow4j.core.preset.KVPatternConfig;
 import io.puriflow4j.core.report.Reporter;
+import io.puriflow4j.spring.MicrometerReporter;
+import io.puriflow4j.spring.PuriflowEndpoint;
+import io.puriflow4j.spring.PuriflowProperties;
 import java.util.ArrayList;
 import org.springframework.boot.actuate.autoconfigure.endpoint.condition.ConditionalOnAvailableEndpoint;
 import org.springframework.boot.autoconfigure.AutoConfiguration;

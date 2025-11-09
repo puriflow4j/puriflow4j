@@ -58,9 +58,9 @@ import spock.lang.Specification
                 "management.endpoints.web.exposure.include=*"
         ],
         classes = [
-                PuriflowLoggingSpec.TestApp,
+                TestApp,
                 DemoController,
-                PuriflowLoggingSpec.TestConfig
+                TestConfig
         ]
 )
 class PuriflowLoggingSpec extends Specification {
