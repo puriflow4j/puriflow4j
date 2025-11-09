@@ -10,14 +10,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web") {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging") // disable Logback
     }
-
     implementation("org.springframework.boot:spring-boot-starter-log4j2")
-
-    configurations.all {
-        exclude(group = "ch.qos.logback", module = "logback-classic")
-        exclude(group = "ch.qos.logback", module = "logback-core")
-        exclude(group = "org.apache.logging.log4j", module = "log4j-to-slf4j") // avoid bridge conflicts
-    }
 
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
