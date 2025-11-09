@@ -6,7 +6,6 @@ package io.puriflow4j.logs.log4j2;
 
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.model.Mode;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
 import io.puriflow4j.logs.core.model.ThrowableView;
 import io.puriflow4j.logs.core.sanitize.MdcSanitizer;
@@ -31,7 +30,6 @@ import org.apache.logging.log4j.message.SimpleMessage;
  */
 public final class PuriflowRewritePolicy implements RewritePolicy {
 
-    private final Reporter reporter;
     private final MessageSanitizer msgSan;
     private final MdcSanitizer mdcSan;
     private final ExceptionShortener shortener;
@@ -40,13 +38,11 @@ public final class PuriflowRewritePolicy implements RewritePolicy {
     private final Mode mode;
 
     public PuriflowRewritePolicy(
-            Reporter reporter,
             Sanitizer sanitizer,
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
             ExceptionClassifier classifier,
             Mode mode) {
-        this.reporter = Objects.requireNonNull(reporter, "reporter");
         this.msgSan = new MessageSanitizer(Objects.requireNonNull(sanitizer, "sanitizer"));
         this.mdcSan = new MdcSanitizer(sanitizer);
         this.shortener = Objects.requireNonNull(shortener, "shortener");

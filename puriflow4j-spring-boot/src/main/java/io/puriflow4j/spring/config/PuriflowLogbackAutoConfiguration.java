@@ -6,16 +6,16 @@ package io.puriflow4j.spring.config;
 
 import ch.qos.logback.classic.LoggerContext;
 import io.puriflow4j.core.api.Sanitizer;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
-import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener;
 import io.puriflow4j.spring.PuriflowProperties;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 
 @AutoConfiguration
@@ -24,9 +24,8 @@ import org.springframework.context.annotation.Bean;
 public class PuriflowLogbackAutoConfiguration {
 
     @Bean
-    @ConditionalOnBean({Sanitizer.class, Reporter.class})
-    public Object puriflowLogbackInit(
-            PuriflowProperties props, Sanitizer sanitizer, Reporter reporter, ExceptionClassifier classifier) {
+    @ConditionalOnBean({Sanitizer.class})
+    public Object puriflowLogbackInit(PuriflowProperties props, Sanitizer sanitizer, ExceptionClassifier classifier) {
         var lf = LoggerFactory.getILoggerFactory();
         if (!(lf instanceof LoggerContext ctx)) return new Object();
 
@@ -36,7 +35,6 @@ public class PuriflowLogbackAutoConfiguration {
         var embeddedShortener = new EmbeddedStacktraceShortener(sanitizer, e.getMaxDepth(), e.getHidePackages());
 
         var listener = new PurifyLoggerContextListener(
-                reporter,
                 sanitizer,
                 shortener,
                 embeddedShortener,
@@ -52,17 +50,5 @@ public class PuriflowLogbackAutoConfiguration {
             listener.onStart(ctx); // initial wrapping now
         }
         return new Object();
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "puriflow4j.logs.errors", name = "categorize", havingValue = "true")
-    public ExceptionClassifier exceptionClassifierEnabled() {
-        return new HeuristicExceptionClassifier();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(ExceptionClassifier.class)
-    public ExceptionClassifier exceptionClassifierNoop() {
-        return ExceptionClassifier.noop();
     }
 }

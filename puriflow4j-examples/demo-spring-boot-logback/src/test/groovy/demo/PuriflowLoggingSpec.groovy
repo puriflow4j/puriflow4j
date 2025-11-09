@@ -4,18 +4,15 @@ import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.core.Appender
 import ch.qos.logback.core.read.ListAppender
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.slf4j.LoggerFactory
+
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
 import spock.lang.Specification
-
 /**
  * Integration tests that verify the exact sanitized log messages produced
  * by DemoController endpoints. We assert the final message string that is
@@ -60,18 +57,13 @@ import spock.lang.Specification
         classes = [
                 TestApp,
                 DemoController,
-                TestConfig
+                //,TestConfig
         ]
 )
 class PuriflowLoggingSpec extends Specification {
 
     @SpringBootApplication
     static class TestApp {}
-
-    @Configuration
-    static class TestConfig {
-        @Bean SimpleMeterRegistry meterRegistry() { new SimpleMeterRegistry() }
-    }
 
     @LocalServerPort int port
     @Autowired TestRestTemplate rest

@@ -5,9 +5,7 @@
 package io.puriflow4j.spring.config;
 
 import io.puriflow4j.core.api.Sanitizer;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
-import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
 import io.puriflow4j.logs.log4j2.PuriflowLog4j2Installer;
@@ -24,9 +22,8 @@ import org.springframework.context.annotation.Bean;
 public class PuriflowLog4j2AutoConfiguration {
 
     @Bean
-    @ConditionalOnBean({Sanitizer.class, Reporter.class})
-    public Object puriflowLog4j2Init(
-            PuriflowProperties props, Sanitizer sanitizer, Reporter reporter, ExceptionClassifier classifier) {
+    @ConditionalOnBean({Sanitizer.class})
+    public Object puriflowLog4j2Init(PuriflowProperties props, Sanitizer sanitizer, ExceptionClassifier classifier) {
 
         var ctx = (LoggerContext) LogManager.getContext(false);
         if (ctx == null) return new Object();
@@ -35,23 +32,11 @@ public class PuriflowLog4j2AutoConfiguration {
         var shortener = new ExceptionShortener(sanitizer, e.isShorten(), e.getMaxDepth(), e.getHidePackages());
         var embeddedShortener = new EmbeddedStacktraceShortener(sanitizer, e.getMaxDepth(), e.getHidePackages());
 
-        var installer = new PuriflowLog4j2Installer(
-                reporter, sanitizer, shortener, embeddedShortener, classifier, props.getMode());
+        var installer =
+                new PuriflowLog4j2Installer(sanitizer, shortener, embeddedShortener, classifier, props.getMode());
 
         installer.install(); // perform async+rewrite wrapping
 
         return new Object();
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "puriflow4j.logs.errors", name = "categorize", havingValue = "true")
-    public ExceptionClassifier exceptionClassifierEnabled() {
-        return new HeuristicExceptionClassifier();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(ExceptionClassifier.class)
-    public ExceptionClassifier exceptionClassifierNoop() {
-        return ExceptionClassifier.noop();
     }
 }

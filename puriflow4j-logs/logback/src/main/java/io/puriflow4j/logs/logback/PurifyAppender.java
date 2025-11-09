@@ -10,7 +10,6 @@ import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.model.Mode;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
 import io.puriflow4j.logs.core.model.ThrowableView;
 import io.puriflow4j.logs.core.sanitize.MdcSanitizer;
@@ -29,7 +28,6 @@ import java.util.Objects;
  */
 public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
     private final Appender<ILoggingEvent> delegate;
-    private final Reporter reporter;
     private final MessageSanitizer msgSan;
     private final MdcSanitizer mdcSan;
     private final ExceptionShortener shortener; // for ThrowableProxy
@@ -39,7 +37,6 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
 
     public PurifyAppender(
             Appender<ILoggingEvent> delegate,
-            Reporter reporter,
             Sanitizer sanitizer,
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
@@ -47,7 +44,6 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
             Mode mode) {
 
         this.delegate = Objects.requireNonNull(delegate);
-        this.reporter = Objects.requireNonNull(reporter);
         this.msgSan = new MessageSanitizer(Objects.requireNonNull(sanitizer));
         this.mdcSan = new MdcSanitizer(sanitizer);
         this.shortener = Objects.requireNonNull(shortener);

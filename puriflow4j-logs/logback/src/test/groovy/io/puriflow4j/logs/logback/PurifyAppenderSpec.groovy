@@ -13,7 +13,6 @@ import io.puriflow4j.core.api.Sanitizer
 import io.puriflow4j.core.api.model.Action
 import io.puriflow4j.core.api.model.DetectionResult
 import io.puriflow4j.core.api.model.Mode
-import io.puriflow4j.core.report.Reporter
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier
 import io.puriflow4j.logs.core.model.ThrowableView
 import io.puriflow4j.logs.core.shorten.ExceptionShortener
@@ -35,7 +34,6 @@ import java.util.regex.Pattern
 class PurifyAppenderSpec extends Specification {
 
     Appender<ILoggingEvent> delegate = Mock()
-    Reporter reporter = Mock()
     ExceptionClassifier classifier = Mock()
 
     def setup() {
@@ -88,7 +86,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, false) // no shortening
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.MASK)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.MASK)
         app.start()
 
         when:
@@ -107,7 +105,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.MASK)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.MASK)
         app.start()
 
         when:
@@ -127,7 +125,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, true) // compact
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.MASK)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.MASK)
         app.start()
 
         when:
@@ -158,7 +156,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.STRICT)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.STRICT)
         app.start()
 
         when:
@@ -180,7 +178,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.MASK)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.MASK)
         app.start()
 
         when:
@@ -198,7 +196,7 @@ class PurifyAppenderSpec extends Specification {
         given:
         def sanitizer = mkSanitizer()
         def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, reporter, sanitizer, shortener, null, classifier, Mode.MASK)
+        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.MASK)
         app.start()
 
         when:

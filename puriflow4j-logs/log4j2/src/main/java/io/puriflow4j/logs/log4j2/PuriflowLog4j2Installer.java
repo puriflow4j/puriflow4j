@@ -6,7 +6,6 @@ package io.puriflow4j.logs.log4j2;
 
 import io.puriflow4j.core.api.Sanitizer;
 import io.puriflow4j.core.api.model.Mode;
-import io.puriflow4j.core.report.Reporter;
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier;
 import io.puriflow4j.logs.core.shorten.EmbeddedStacktraceShortener;
 import io.puriflow4j.logs.core.shorten.ExceptionShortener;
@@ -39,7 +38,6 @@ public final class PuriflowLog4j2Installer {
     private static final long DEFAULT_SHUTDOWN_TIMEOUT_MILLIS = 5000L;
     private static final boolean DEFAULT_INCLUDE_LOCATION = false;
 
-    private final Reporter reporter;
     private final Sanitizer sanitizer;
     private final ExceptionShortener shortener;
     private final EmbeddedStacktraceShortener embeddedShortener;
@@ -47,13 +45,11 @@ public final class PuriflowLog4j2Installer {
     private final Mode mode;
 
     public PuriflowLog4j2Installer(
-            Reporter reporter,
             Sanitizer sanitizer,
             ExceptionShortener shortener,
             EmbeddedStacktraceShortener embeddedShortener,
             ExceptionClassifier classifier,
             Mode mode) {
-        this.reporter = Objects.requireNonNull(reporter);
         this.sanitizer = Objects.requireNonNull(sanitizer);
         this.shortener = Objects.requireNonNull(shortener);
         this.embeddedShortener = embeddedShortener;
@@ -80,7 +76,7 @@ public final class PuriflowLog4j2Installer {
 
             // 1) Policy for message/MDC/exception (STRICT, classification, shortening)
             final PuriflowRewritePolicy policy =
-                    new PuriflowRewritePolicy(reporter, sanitizer, shortener, embeddedShortener, classifier, mode);
+                    new PuriflowRewritePolicy(sanitizer, shortener, embeddedShortener, classifier, mode);
 
             // 2) Create RewriteAppender that targets the original appender by name.
             //    Signature: createAppender(name, ignoreExceptions("true"/"false"), AppenderRef[], policy, config)
