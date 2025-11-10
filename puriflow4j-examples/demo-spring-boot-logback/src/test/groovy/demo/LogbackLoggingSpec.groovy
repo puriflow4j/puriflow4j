@@ -60,7 +60,7 @@ import spock.lang.Specification
                 //,TestConfig
         ]
 )
-class PuriflowLoggingSpec extends Specification {
+class LogbackLoggingSpec extends Specification {
 
     @SpringBootApplication
     static class TestApp {}

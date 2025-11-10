@@ -1,0 +1,12 @@
+<!-- EN: Synchronous config for deterministic tests -->
+<Configuration status="WARN" packages="org.apache.logging.log4j.core.test">
+    <Appenders>
+        <!-- ListAppender comes from log4j-core-test -->
+        <List name="MEM"/>
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="MEM"/>
+        </Root>
+    </Loggers>
+</Configuration>

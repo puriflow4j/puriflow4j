@@ -46,7 +46,6 @@ subprojects {
         testImplementation("org.apache.groovy:groovy-all:4.0.23")
 
         testImplementation("org.assertj:assertj-core:3.26.3")
-        testImplementation("ch.qos.logback:logback-classic:1.5.7")
     }
 
     tasks.test { useJUnitPlatform() }
