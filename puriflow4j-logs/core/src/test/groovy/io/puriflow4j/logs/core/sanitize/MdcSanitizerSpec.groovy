@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 
 class MdcSanitizerSpec extends Specification {
 
-    // Comment (EN): Minimal detector used by tests:
+    //  Minimal detector used by tests:
     //  - Prefer key=value masking for keys 'secret' or 'password' (mask only the value part).
     //  - If no key=value matched, mask bare 'secret' substrings in the text.
     private Sanitizer mkSanitizer() {
@@ -86,7 +86,7 @@ class MdcSanitizerSpec extends Specification {
 
         then:
         out.get("user") == "alice"
-        // Comment (EN): KV detector wins => "[MASKED]" (not "super[MASKED]")
+        //  KV detector wins => "[MASKED]" (not "super[MASKED]")
         out.get("password") == "[MASKED]"
         out.get("mode") == "test"
 
@@ -109,7 +109,7 @@ class MdcSanitizerSpec extends Specification {
         then:
         out.get("key1") == ""
         out.get("key2") == null
-        // Comment (EN): Expected value part becomes "[MASKED]"
+        //  Expected value part becomes "[MASKED]"
         out.get("key3") == "secret=[MASKED]"
     }
 

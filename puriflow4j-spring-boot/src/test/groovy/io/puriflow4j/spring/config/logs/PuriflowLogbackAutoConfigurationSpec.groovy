@@ -1,9 +1,10 @@
-package io.puriflow4j.spring.config
+package io.puriflow4j.spring.config.logs
 
 import ch.qos.logback.classic.LoggerContext
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier
 import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener
+import io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration
 import io.puriflow4j.spring.config.logs.PuriflowLogbackAutoConfiguration
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -12,7 +13,7 @@ import spock.lang.Specification
 
 class PuriflowLogbackAutoConfigurationSpec extends Specification {
 
-    // Comment (EN): The runner loads BOTH base and logback auto-configs.
+    //  The runner loads BOTH base and logback auto-configs.
     // Base AC will create Sanitizer/Properties; no manual bean overriding.
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(
@@ -29,7 +30,7 @@ class PuriflowLogbackAutoConfigurationSpec extends Specification {
             )
 
     def cleanup() {
-        // Comment (EN): Reset Logback between tests to avoid listener leakage
+        //  Reset Logback between tests to avoid listener leakage
         def ctx = (LoggerContext) LoggerFactory.getILoggerFactory()
         ctx.reset()
     }
@@ -47,11 +48,11 @@ class PuriflowLogbackAutoConfigurationSpec extends Specification {
         local.run { ctx ->
             assert ctx.isActive()
 
-            // Comment (EN): Heuristic classifier is selected
+            //  Heuristic classifier is selected
             def cls = ctx.getBean(ExceptionClassifier)
             assert cls instanceof HeuristicExceptionClassifier
 
-            // Comment (EN): Listener attached to Logback
+            //  Listener attached to Logback
             def lctx = (LoggerContext) LoggerFactory.getILoggerFactory()
             assert lctx.copyOfListenerList.stream()
                     .anyMatch { it.class.name == PurifyLoggerContextListener.name }

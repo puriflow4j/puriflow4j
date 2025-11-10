@@ -20,7 +20,7 @@ dependencies {
     testImplementation("org.spockframework:spock-core:2.4-M1-groovy-4.0")
     testImplementation("org.spockframework:spock-spring:2.4-M1-groovy-4.0")
 
-    // Comment (EN): Use Log4j2 in tests; remove Logback to avoid bridges
+    //  Use Log4j2 in tests; remove Logback to avoid bridges
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.springframework.boot", module = "spring-boot-starter-logging")
     }

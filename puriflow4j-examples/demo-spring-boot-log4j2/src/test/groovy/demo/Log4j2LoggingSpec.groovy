@@ -106,7 +106,7 @@ class Log4j2LoggingSpec extends Specification {
         lastLine() == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
     }
 
-    // Comment (EN): Verifies MDC (ThreadContext) is sanitized: 'token' is masked and 'traceId' is preserved.
+    //  Verifies MDC (ThreadContext) is sanitized: 'token' is masked and 'traceId' is preserved.
     def "GET /log/message -> MDC is sanitized (token masked, traceId preserved)"() {
         when:
         def resp = rest.getForEntity(url("/log/message"), String)

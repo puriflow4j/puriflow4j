@@ -1,5 +1,6 @@
-package io.puriflow4j.spring.config
+package io.puriflow4j.spring.config.logs
 
+import io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration
 import io.puriflow4j.spring.config.logs.PuriflowLog4j2AutoConfiguration
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
@@ -12,7 +13,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 
 class PuriflowLog4j2AutoConfigurationSpec extends Specification {
 
-    // Comment (EN): The runner loads BOTH base and log4j2 auto-configs.
+    //  The runner loads BOTH base and log4j2 auto-configs.
     // Base AC will create Sanitizer/Properties/Classifier; no manual bean overriding here.
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(
@@ -29,7 +30,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
             )
 
     def cleanup() {
-        // Comment (EN): Reset Log4j2 between tests to avoid leftover wrappers across runs
+        //  Reset Log4j2 between tests to avoid leftover wrappers across runs
         LoggerContext ctx = (LoggerContext) LogManager.getContext(false)
         if (ctx != null) {
             ctx.stop()
@@ -67,11 +68,11 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
                 .run { ctx ->
                     assert ctx.isActive()
 
-                    // Comment (EN): classifier is heuristic when categorize=true
+                    //  classifier is heuristic when categorize=true
                     def cls = ctx.getBean(ExceptionClassifier)
                     assert cls instanceof HeuristicExceptionClassifier
 
-                    // Comment (EN): installer ran — appender wrappers exist
+                    //  installer ran — appender wrappers exist
                     assert hasPurifyWrappers() : "Expected PURIFY_* appenders in Log4j2 configuration"
                 }
     }
@@ -86,7 +87,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
         }
 
         then:
-        // Comment (EN): reset runtime Log4j2 to simulate fresh app startup (keeps baseline appenders)
+        //  reset runtime Log4j2 to simulate fresh app startup (keeps baseline appenders)
         // (done in cleanup(), but we want second run to see the same base state)
         true
 
@@ -98,7 +99,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
         }
 
         then:
-        // Comment (EN): Wrappers should not multiply; count should be the same
+        //  Wrappers should not multiply; count should be the same
         secondCount == countPurifyWrappers()
     }
 
@@ -121,7 +122,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
         off.run { ctx ->
             assert ctx.isActive()
 
-            // Comment (EN): No wrappers should be present when logs module is disabled
+            //  No wrappers should be present when logs module is disabled
             assert !hasPurifyWrappers()
         }
     }

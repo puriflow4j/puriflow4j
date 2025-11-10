@@ -162,7 +162,7 @@ class LogbackLoggingSpec extends Specification {
         lastMessage() == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
     }
 
-    // Comment (EN): Verifies MDC is sanitized in Logback: 'token' is masked and 'traceId' is preserved.
+    //  Verifies MDC is sanitized in Logback: 'token' is masked and 'traceId' is preserved.
     def "GET /log/message -> MDC is sanitized (token masked, traceId preserved)"() {
         when:
         def resp = rest.getForEntity(url("/log/message"), String)
@@ -177,11 +177,11 @@ class LogbackLoggingSpec extends Specification {
         ILoggingEvent ev = (ILoggingEvent) appender.list.last()
         Map<String, String> mdc = ev.getMDCPropertyMap() ?: [:]
 
-        // Comment (EN): 'traceId' should be present and non-empty
+        //  'traceId' should be present and non-empty
         assert mdc.containsKey("traceId")
         assert (mdc.get("traceId") as String)?.trim()
 
-        // Comment (EN): MDC should be sanitized same as normal keys -> 'token' masked
+        //  MDC should be sanitized same as normal keys -> 'token' masked
         // If you later decide to drop non-allowlisted MDC keys instead of masking, switch to:
         //   assert !mdc.containsKey("token")
         assert mdc.containsKey("token")

@@ -9,7 +9,7 @@ import spock.lang.Specification
 
 class PuriflowBaseAutoConfigurationSpec extends Specification {
 
-    // Comment (EN): Load ONLY the base auto-config; no manual beans with same names.
+    //  Load ONLY the base auto-config; no manual beans with same names.
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(PuriflowBaseAutoConfiguration))
             .withUserConfiguration(TestSupport)
