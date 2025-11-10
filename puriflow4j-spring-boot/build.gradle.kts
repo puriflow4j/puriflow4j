@@ -15,6 +15,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-test:3.3.4")
     testImplementation("org.springframework.boot:spring-boot-test-autoconfigure:3.3.4")
 
+    testImplementation("ch.qos.logback:logback-classic:1.5.12")
     testImplementation("org.apache.logging.log4j:log4j-core:2.24.1")
 }
 
