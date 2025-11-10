@@ -31,5 +31,3 @@ puriflow4j:
         - com.fasterxml.jackson
         - java.util.concurrent
       categorize: true
-
-management.endpoints.web.exposure.include: "*"

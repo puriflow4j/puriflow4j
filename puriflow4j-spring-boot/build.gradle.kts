@@ -5,8 +5,7 @@ dependencies {
 
     implementation(project(":puriflow4j-logs:logback"))
     implementation(project(":puriflow4j-logs:log4j2"))
-
-    // compileOnly(project(":puriflow4j-logs-jul"))    // future
+    implementation(project(":puriflow4j-logs:jul"))
 
     compileOnly("org.slf4j:slf4j-api:2.0.13")
     compileOnly("org.projectlombok:lombok:1.18.34")

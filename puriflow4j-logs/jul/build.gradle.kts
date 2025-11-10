@@ -1,19 +1,9 @@
-plugins {
-    id("java")
-}
-
-group = "io.puriflow4j"
-version = "0.1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
+plugins { `java-library` }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.9.1"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    api(project(":puriflow4j-logs:core"))
 }
 
-tasks.test {
-    useJUnitPlatform()
+publishing {
+    publications { create<MavenPublication>("mavenJava") { from(components["java"]) } }
 }

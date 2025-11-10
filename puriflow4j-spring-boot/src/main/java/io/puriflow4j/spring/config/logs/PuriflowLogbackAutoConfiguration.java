@@ -2,7 +2,7 @@
  * Copyright (c) 2025 Puriflow4J Contributors
  * Licensed under the Apache License 2.0
  */
-package io.puriflow4j.spring.config;
+package io.puriflow4j.spring.config.logs;
 
 import ch.qos.logback.classic.LoggerContext;
 import io.puriflow4j.core.api.Sanitizer;

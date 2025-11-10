@@ -18,5 +18,6 @@ include(
 
         "puriflow4j-examples:demo-spring-boot-logback",
         "puriflow4j-examples:demo-spring-boot-log4j2",
+        "puriflow4j-examples:demo-spring-boot-jul",
         "puriflow4j-examples:demo-plain-jul"
 )

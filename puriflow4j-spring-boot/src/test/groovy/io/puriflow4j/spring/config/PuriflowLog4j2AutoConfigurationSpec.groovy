@@ -1,5 +1,6 @@
 package io.puriflow4j.spring.config
 
+import io.puriflow4j.spring.config.logs.PuriflowLog4j2AutoConfiguration
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
 import org.apache.logging.log4j.core.config.Configuration
