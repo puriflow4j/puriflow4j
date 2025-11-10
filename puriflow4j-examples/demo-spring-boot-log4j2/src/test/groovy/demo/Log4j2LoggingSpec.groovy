@@ -109,6 +109,31 @@ class Log4j2LoggingSpec extends Specification {
         lastLine() == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
     }
 
+    // Comment (EN): Verifies MDC (ThreadContext) is sanitized: 'token' is masked and 'traceId' is preserved.
+    def "GET /log/message -> MDC is sanitized (token masked, traceId preserved)"() {
+        when:
+        def resp = rest.getForEntity(url("/log/message"), String)
+
+        then:
+        resp.statusCode == HttpStatus.OK
+
+        and: "inspect last LogEvent context data (MDC)"
+        def events = mem.events
+        assert !events.isEmpty() : "No log events captured"
+        LogEvent ev = (LogEvent) events.last()
+
+        // Log4j2 stores MDC in ContextData (StringMap). Convert to normal map for assertions.
+        def mdc = ev.getContextData()?.toMap() ?: [:]
+
+        // 'traceId' should be present and non-empty
+        assert mdc.containsKey("traceId")
+        assert (mdc.get("traceId") as String)?.trim()
+
+        // Since our MDC sanitizer masks like normal keys, 'token' should exist and be masked
+        assert mdc.containsKey("token")
+        assert mdc.get("token") == "[MASKED_TOKEN]"
+    }
+
     def "GET /log/card -> exact PAN-masked message"() {
         when:
         def resp = rest.getForEntity(url("/log/card"), String)
