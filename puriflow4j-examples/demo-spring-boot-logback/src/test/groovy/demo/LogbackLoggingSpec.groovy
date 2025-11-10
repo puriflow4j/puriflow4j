@@ -47,17 +47,11 @@ import spock.lang.Specification
                 "puriflow4j.detectors[11]=ip",
 
                 "puriflow4j.logs.enabled=true",
-                "puriflow4j.logs.key-allowlist[0]=traceId",
-                "puriflow4j.logs.errors.shorten=false",
-                "puriflow4j.logs.errors.max-depth=3",
-                "puriflow4j.logs.errors.categorize=true",
-
-                "management.endpoints.web.exposure.include=*"
+                "puriflow4j.logs.errors.categorize=true"
         ],
         classes = [
                 TestApp,
-                DemoController,
-                //,TestConfig
+                DemoController
         ]
 )
 class LogbackLoggingSpec extends Specification {
