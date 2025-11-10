@@ -12,31 +12,24 @@ import io.puriflow4j.logs.core.shorten.ExceptionShortener;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Appender;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.appender.AsyncAppender;
 import org.apache.logging.log4j.core.appender.rewrite.RewriteAppender;
 import org.apache.logging.log4j.core.config.AppenderRef;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 
 /**
- * High-performance wiring for Log4j2:
- *   NON-async appender "A" becomes:  Async("PURIFY_ASYNC_A") -> Rewrite("PURIFY_WRAPPER_A") -> A
- *   Existing AsyncAppender is left intact (safe default).
+ * Log4j2 wiring that keeps user's async/sync choice intact:
  *
- * Notes:
- *  - Uses RewriteAppender.createAppender(...) as requested (no AppenderSet).
- *  - Sanitization runs off the caller thread (on Async worker).
- *  - Idempotent (skips already wrapped).
+ * For ANY appender "A" (sync or async), we add:
+ *   LoggerConfig -> Rewrite("PURIFY_WRAPPER_A") -> A
+ *
+ * - We do NOT introduce extra AsyncAppender.
+ * - If user already uses AsyncAppender or AsyncLoggers, the async behavior remains.
+ * - Idempotent (skips already wrapped).
  */
 public final class PuriflowLog4j2Installer {
-
-    private static final int DEFAULT_BUFFER_SIZE = 8192;
-    private static final boolean DEFAULT_BLOCKING = true;
-    private static final long DEFAULT_SHUTDOWN_TIMEOUT_MILLIS = 5000L;
-    private static final boolean DEFAULT_INCLUDE_LOCATION = false;
 
     private final Sanitizer sanitizer;
     private final ExceptionShortener shortener;
@@ -57,10 +50,20 @@ public final class PuriflowLog4j2Installer {
         this.mode = Objects.requireNonNull(mode);
     }
 
+    /**
+     * Public API kept as before. Now it preserves user's async/sync setup.
+     */
     public void install() {
-        final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+        LoggerContext ctx = LoggerContext.getContext(false);
+        if (ctx == null) return;
+        installPreservingAsync(ctx);
+    }
+
+    // --- Internal implementation that preserves async/sync ---
+    public void installPreservingAsync(LoggerContext ctx) {
         final Configuration cfg = ctx.getConfiguration();
 
+        // Snapshot to avoid concurrent modification while adding new appenders
         final Map<String, Appender> appenders = new LinkedHashMap<>(cfg.getAppenders());
 
         for (Map.Entry<String, Appender> e : appenders.entrySet()) {
@@ -69,49 +72,35 @@ public final class PuriflowLog4j2Installer {
             if (origName == null || original == null) continue;
 
             // Skip already-processed
-            if (origName.startsWith("PURIFY_WRAPPER_") || origName.startsWith("PURIFY_ASYNC_")) continue;
+            if (origName.startsWith("PURIFY_WRAPPER_")) continue;
 
-            // If it's already async — leave as-is (optionally, later wrap its children)
-            if (original instanceof AsyncAppender) continue;
-
-            // 1) Policy for message/MDC/exception (STRICT, classification, shortening)
+            // Build policy (message + MDC + exception)
             final PuriflowRewritePolicy policy =
                     new PuriflowRewritePolicy(sanitizer, shortener, embeddedShortener, classifier, mode);
 
-            // 2) Create RewriteAppender that targets the original appender by name.
-            //    Signature: createAppender(name, ignoreExceptions("true"/"false"), AppenderRef[], policy, config)
+            // Create RewriteAppender that targets the original appender by name.
             final String rewriteName = "PURIFY_WRAPPER_" + origName;
             final AppenderRef[] rewriteRefs = new AppenderRef[] {AppenderRef.createAppenderRef(origName, null, null)};
+
             final RewriteAppender rewrite = RewriteAppender.createAppender(
-                    /* name              */ rewriteName,
-                    /* ignoreExceptions  */ "true",
-                    /* appenderRefs      */ rewriteRefs,
-                    /* config            */ cfg,
-                    /* rewritePolicy     */ policy,
-                    /* filter            */ null);
+                    /* name             */ rewriteName,
+                    /* ignoreExceptions */ "true",
+                    /* appenderRefs     */ rewriteRefs,
+                    /* config           */ cfg,
+                    /* rewritePolicy    */ policy,
+                    /* filter           */ null);
+
             rewrite.start();
             cfg.addAppender(rewrite);
 
-            // 3) Create AsyncAppender that targets the rewrite wrapper.
-            final String asyncName = "PURIFY_ASYNC_" + origName;
-            final AppenderRef[] asyncRefs = new AppenderRef[] {AppenderRef.createAppenderRef(rewriteName, null, null)};
-
-            final AsyncAppender async = AsyncAppender.newBuilder()
-                    .setName(asyncName)
-                    .setConfiguration(cfg)
-                    .setAppenderRefs(asyncRefs)
-                    .setBlocking(DEFAULT_BLOCKING)
-                    .setBufferSize(DEFAULT_BUFFER_SIZE)
-                    .setShutdownTimeout(DEFAULT_SHUTDOWN_TIMEOUT_MILLIS)
-                    .setIncludeLocation(DEFAULT_INCLUDE_LOCATION)
-                    .build();
-            async.start();
-            cfg.addAppender(async);
-
-            // 4) Replace original appender with our async wrapper in all loggers (incl. root)
-            replaceAppenderInAllLoggers(cfg, origName, async);
+            // Replace original appender with our rewrite in all loggers (incl. root).
+            // This yields:
+            //   LoggerConfig -> Rewrite(PURIFY_WRAPPER_orig) -> orig
+            // If 'orig' is AsyncAppender, async stays downstream (behaviour preserved).
+            replaceAppenderInAllLoggers(cfg, origName, rewrite);
         }
 
+        // Publish changes immediately so the very first log is sanitized
         ctx.updateLoggers();
     }
 
