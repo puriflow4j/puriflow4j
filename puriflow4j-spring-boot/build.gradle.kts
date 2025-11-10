@@ -2,9 +2,6 @@ plugins { `java-library` }
 
 dependencies {
     compileOnly("org.springframework.boot:spring-boot-autoconfigure:3.3.4")
-    compileOnly("org.springframework.boot:spring-boot-actuator:3.3.4")
-    compileOnly("org.springframework.boot:spring-boot-actuator-autoconfigure:3.3.4")
-    compileOnly("io.micrometer:micrometer-core:1.13.6")
 
     implementation(project(":puriflow4j-logs:logback"))
     implementation(project(":puriflow4j-logs:log4j2"))
@@ -15,9 +12,10 @@ dependencies {
     compileOnly("org.projectlombok:lombok:1.18.34")
     annotationProcessor("org.projectlombok:lombok:1.18.34")
 
-    testImplementation("io.micrometer:micrometer-core:1.13.6")
     testImplementation("org.springframework.boot:spring-boot-test:3.3.4")
     testImplementation("org.springframework.boot:spring-boot-test-autoconfigure:3.3.4")
+
+    testImplementation("org.apache.logging.log4j:log4j-core:2.24.1")
 }
 
 publishing {

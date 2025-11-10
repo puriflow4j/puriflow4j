@@ -20,6 +20,3 @@ include(
         "puriflow4j-examples:demo-spring-boot-log4j2",
         "puriflow4j-examples:demo-plain-jul"
 )
-include("logs")
-include("puriflow4j-logs:core")
-findProject(":puriflow4j-logs:core")?.name = "core"
