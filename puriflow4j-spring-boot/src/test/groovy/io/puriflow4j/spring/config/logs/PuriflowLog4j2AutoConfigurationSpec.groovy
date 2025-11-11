@@ -1,7 +1,6 @@
 package io.puriflow4j.spring.config.logs
 
-import io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration
-import io.puriflow4j.spring.config.logs.PuriflowLog4j2AutoConfiguration
+
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.core.LoggerContext
 import org.apache.logging.log4j.core.config.Configuration
@@ -17,7 +16,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
     // Base AC will create Sanitizer/Properties/Classifier; no manual bean overriding here.
     private ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(
-                    PuriflowBaseAutoConfiguration,
+                    PuriflowBaseLogAutoConfiguration,
                     PuriflowLog4j2AutoConfiguration
             ))
             .withPropertyValues(
@@ -110,7 +109,7 @@ class PuriflowLog4j2AutoConfigurationSpec extends Specification {
 
         def off = new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(
-                        PuriflowBaseAutoConfiguration,
+                        PuriflowBaseLogAutoConfiguration,
                         PuriflowLog4j2AutoConfiguration
                 ))
                 .withPropertyValues(

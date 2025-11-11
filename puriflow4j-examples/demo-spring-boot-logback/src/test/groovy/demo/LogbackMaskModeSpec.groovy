@@ -26,35 +26,32 @@ import spock.lang.Specification
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = [
+                "spring.config.name=__none__",
                 // make sure our in-memory appender is active
                 "logging.config=classpath:logback-test.xml",
 
-                // Puriflow settings as requested
-                "puriflow4j.enabled=true",
-                "puriflow4j.mode=mask",
-
-                "puriflow4j.detectors[0]=token_bearer",
-                "puriflow4j.detectors[1]=cloud_access_key",
-                "puriflow4j.detectors[2]=api_token_well_known",
-                "puriflow4j.detectors[3]=basic_auth",
-                "puriflow4j.detectors[4]=db_credential",
-                "puriflow4j.detectors[5]=url_redactor",
-                "puriflow4j.detectors[6]=private_key",
-                "puriflow4j.detectors[7]=credit_card",
-                "puriflow4j.detectors[8]=email",
-                "puriflow4j.detectors[9]=password_kv",
-                "puriflow4j.detectors[10]=iban",
-                "puriflow4j.detectors[11]=ip",
-
+                // puriflow4j.logs mask mode with all detectors
                 "puriflow4j.logs.enabled=true",
-                "puriflow4j.logs.errors.categorize=true"
+                "puriflow4j.logs.mode=mask",
+                "puriflow4j.logs.detectors[0]=token_bearer",
+                "puriflow4j.logs.detectors[1]=cloud_access_key",
+                "puriflow4j.logs.detectors[2]=api_token_well_known",
+                "puriflow4j.logs.detectors[3]=basic_auth",
+                "puriflow4j.logs.detectors[4]=db_credential",
+                "puriflow4j.logs.detectors[5]=url_redactor",
+                "puriflow4j.logs.detectors[6]=private_key",
+                "puriflow4j.logs.detectors[7]=credit_card",
+                "puriflow4j.logs.detectors[8]=email",
+                "puriflow4j.logs.detectors[9]=password_kv",
+                "puriflow4j.logs.detectors[10]=iban",
+                "puriflow4j.logs.detectors[11]=ip"
         ],
         classes = [
                 TestApp,
                 DemoController
         ]
 )
-class LogbackLoggingSpec extends Specification {
+class LogbackMaskModeSpec extends Specification {
 
     @SpringBootApplication
     static class TestApp {}
@@ -283,7 +280,7 @@ class LogbackLoggingSpec extends Specification {
         and:
         def m = allMessages()
         assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
-                "[DB] [Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]\n" +
+                "[Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]\n" +
                 "\tat demo.DemoController.error(DemoController.java:80)\n" +
                 "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
     }
@@ -302,7 +299,7 @@ class LogbackLoggingSpec extends Specification {
         and:
         def m = allMessages()
         assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
-                "[DB] [Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]\n" +
+                "[Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]\n" +
                 "\tat demo.DemoController.nestedError(DemoController.java:90)\n" +
                 "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
     }

@@ -30,28 +30,27 @@ import java.time.Duration
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         classes = [TestApp, DemoController],
         properties = [
-                "puriflow4j.enabled=true",
-                "puriflow4j.mode=mask",
+                "spring.config.name=__none__",
 
-                "puriflow4j.detectors[0]=token_bearer",
-                "puriflow4j.detectors[1]=cloud_access_key",
-                "puriflow4j.detectors[2]=api_token_well_known",
-                "puriflow4j.detectors[3]=basic_auth",
-                "puriflow4j.detectors[4]=db_credential",
-                "puriflow4j.detectors[5]=url_redactor",
-                "puriflow4j.detectors[6]=private_key",
-                "puriflow4j.detectors[7]=credit_card",
-                "puriflow4j.detectors[8]=email",
-                "puriflow4j.detectors[9]=password_kv",
-                "puriflow4j.detectors[10]=iban",
-                "puriflow4j.detectors[11]=ip",
-
+                // puriflow4j.logs mask mode with all detectors
                 "puriflow4j.logs.enabled=true",
-                "puriflow4j.logs.errors.categorize=true"
+                "puriflow4j.logs.mode=mask",
+                "puriflow4j.logs.detectors[0]=token_bearer",
+                "puriflow4j.logs.detectors[1]=cloud_access_key",
+                "puriflow4j.logs.detectors[2]=api_token_well_known",
+                "puriflow4j.logs.detectors[3]=basic_auth",
+                "puriflow4j.logs.detectors[4]=db_credential",
+                "puriflow4j.logs.detectors[5]=url_redactor",
+                "puriflow4j.logs.detectors[6]=private_key",
+                "puriflow4j.logs.detectors[7]=credit_card",
+                "puriflow4j.logs.detectors[8]=email",
+                "puriflow4j.logs.detectors[9]=password_kv",
+                "puriflow4j.logs.detectors[10]=iban",
+                "puriflow4j.logs.detectors[11]=ip"
         ]
 )
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class JulLoggingSpec extends Specification {
+class JULMaskModeSpec extends Specification {
 
     @SpringBootApplication
     static class TestApp {}
@@ -175,7 +174,7 @@ class JulLoggingSpec extends Specification {
         and:
         def logs = waitStderrContains("Servlet.service() for servlet")
         assert logs.contains("""Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause
-[DB] [Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]
+[Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]
 \tat demo.DemoController.error(DemoController.java:85)
 \tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
 """)
@@ -191,7 +190,7 @@ class JulLoggingSpec extends Specification {
         and:
         def logs = waitStderrContains("top-level msg")
         assert logs.contains("""Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause
-[DB] [Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]
+[Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]
 \tat demo.DemoController.nestedError(DemoController.java:95)
 \tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
 """)

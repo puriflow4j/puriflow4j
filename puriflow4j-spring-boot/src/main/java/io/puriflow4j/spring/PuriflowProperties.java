@@ -11,29 +11,11 @@ import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@Getter
 @ConfigurationProperties(prefix = "puriflow4j")
 public class PuriflowProperties {
 
-    @Setter
-    @Getter
-    private boolean enabled = false;
-
-    @Setter
-    @Getter
-    private Mode mode = Mode.DRY_RUN;
-
-    private List<DetectorType> detectors = new ArrayList<>();
-
-    @Getter
     private Logs logs = new Logs();
-
-    public List<DetectorType> getDetectors() {
-        return Collections.unmodifiableList(detectors);
-    }
-
-    public void setDetectors(List<DetectorType> detectors) {
-        this.detectors = new ArrayList<>(Objects.requireNonNullElse(detectors, List.of()));
-    }
 
     public void setLogs(Logs logs) {
         this.logs = (logs == null) ? new Logs() : logs;
@@ -45,6 +27,11 @@ public class PuriflowProperties {
         @Getter
         private boolean enabled = false;
 
+        @Setter
+        @Getter
+        private Mode mode = Mode.DRY_RUN;
+
+        private List<DetectorType> detectors = new ArrayList<>();
         private List<String> onlyLoggers = new ArrayList<>();
         private List<String> ignoreLoggers = new ArrayList<>();
         private List<String> keyAllowlist = new ArrayList<>();
@@ -52,6 +39,14 @@ public class PuriflowProperties {
 
         @Getter
         private Errors errors = new Errors();
+
+        public List<DetectorType> getDetectors() {
+            return Collections.unmodifiableList(detectors);
+        }
+
+        public void setDetectors(List<DetectorType> detectors) {
+            this.detectors = new ArrayList<>(Objects.requireNonNullElse(detectors, List.of()));
+        }
 
         public List<String> getOnlyLoggers() {
             return Collections.unmodifiableList(onlyLoggers);

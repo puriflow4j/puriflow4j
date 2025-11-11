@@ -4,8 +4,6 @@ import ch.qos.logback.classic.LoggerContext
 import io.puriflow4j.logs.core.categorize.ExceptionClassifier
 import io.puriflow4j.logs.core.categorize.HeuristicExceptionClassifier
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener
-import io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration
-import io.puriflow4j.spring.config.logs.PuriflowLogbackAutoConfiguration
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -17,7 +15,7 @@ class PuriflowLogbackAutoConfigurationSpec extends Specification {
     // Base AC will create Sanitizer/Properties; no manual bean overriding.
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(
-                    PuriflowBaseAutoConfiguration,
+                    PuriflowBaseLogAutoConfiguration,
                     PuriflowLogbackAutoConfiguration
             ))
             .withPropertyValues(
@@ -104,7 +102,7 @@ class PuriflowLogbackAutoConfigurationSpec extends Specification {
 
         def off = new ApplicationContextRunner()
                 .withConfiguration(AutoConfigurations.of(
-                        PuriflowBaseAutoConfiguration,
+                        PuriflowBaseLogAutoConfiguration,
                         PuriflowLogbackAutoConfiguration
                 ))
                 .withPropertyValues(

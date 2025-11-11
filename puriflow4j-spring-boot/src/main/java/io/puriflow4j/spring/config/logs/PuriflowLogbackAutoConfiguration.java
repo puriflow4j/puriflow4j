@@ -12,6 +12,7 @@ import io.puriflow4j.logs.core.shorten.ExceptionShortener;
 import io.puriflow4j.logs.logback.PurifyLoggerContextListener;
 import io.puriflow4j.spring.PuriflowProperties;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -25,7 +26,10 @@ public class PuriflowLogbackAutoConfiguration {
 
     @Bean
     @ConditionalOnBean({Sanitizer.class})
-    public Object puriflowLogbackInit(PuriflowProperties props, Sanitizer sanitizer, ExceptionClassifier classifier) {
+    public Object puriflowLogbackInit(
+            PuriflowProperties props,
+            @Qualifier("logSanitizer") Sanitizer sanitizer,
+            @Qualifier("logExceptionClassifier") ExceptionClassifier classifier) {
         var lf = LoggerFactory.getILoggerFactory();
         if (!(lf instanceof LoggerContext ctx)) return new Object();
 
@@ -39,7 +43,7 @@ public class PuriflowLogbackAutoConfiguration {
                 shortener,
                 embeddedShortener,
                 classifier,
-                props.getMode(),
+                props.getLogs().getMode(),
                 props.getLogs().getOnlyLoggers(),
                 props.getLogs().getIgnoreLoggers());
 

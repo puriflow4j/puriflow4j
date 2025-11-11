@@ -12,6 +12,7 @@ import io.puriflow4j.logs.log4j2.PuriflowLog4j2Installer;
 import io.puriflow4j.spring.PuriflowProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.*;
 import org.springframework.context.annotation.Bean;
@@ -23,8 +24,10 @@ public class PuriflowLog4j2AutoConfiguration {
 
     @Bean
     @ConditionalOnBean({Sanitizer.class})
-    public Object puriflowLog4j2Init(PuriflowProperties props, Sanitizer sanitizer, ExceptionClassifier classifier) {
-
+    public Object puriflowLog4j2Init(
+            PuriflowProperties props,
+            @Qualifier("logSanitizer") Sanitizer sanitizer,
+            @Qualifier("logExceptionClassifier") ExceptionClassifier classifier) {
         var ctx = (LoggerContext) LogManager.getContext(false);
         if (ctx == null) return new Object();
 
@@ -32,8 +35,12 @@ public class PuriflowLog4j2AutoConfiguration {
         var shortener = new ExceptionShortener(sanitizer, e.isShorten(), e.getMaxDepth(), e.getHidePackages());
         var embeddedShortener = new EmbeddedStacktraceShortener(sanitizer, e.getMaxDepth(), e.getHidePackages());
 
-        var installer =
-                new PuriflowLog4j2Installer(sanitizer, shortener, embeddedShortener, classifier, props.getMode());
+        var installer = new PuriflowLog4j2Installer(
+                sanitizer,
+                shortener,
+                embeddedShortener,
+                classifier,
+                props.getLogs().getMode());
 
         installer.install(); // perform async+rewrite wrapping
 

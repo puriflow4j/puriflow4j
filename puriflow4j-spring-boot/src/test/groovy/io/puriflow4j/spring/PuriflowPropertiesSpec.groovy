@@ -23,10 +23,9 @@ class PuriflowPropertiesSpec extends Specification {
     def "binds properties from application.yaml correctly"() {
         given:
         def propertyValues = [
-                "puriflow4j.enabled=true",
-                "puriflow4j.mode=MASK",
-                "puriflow4j.detectors[0]=EMAIL",
                 "puriflow4j.logs.enabled=true",
+                "puriflow4j.logs.mode=MASK",
+                "puriflow4j.logs.detectors[0]=EMAIL",
                 "puriflow4j.logs.only-loggers[0]=com.example",
                 "puriflow4j.logs.key-allowlist[0]=user",
                 "puriflow4j.logs.errors.shorten=true",
@@ -37,11 +36,10 @@ class PuriflowPropertiesSpec extends Specification {
         expect:
         runner.withPropertyValues(*propertyValues).run { ctx ->
             def props = ctx.getBean(PuriflowProperties)
-            assert props.enabled
-            assert props.mode == Mode.MASK
-            assert props.detectors == [DetectorType.EMAIL]
 
             assert props.logs.enabled
+            assert props.logs.mode == Mode.MASK
+            assert props.logs.detectors == [DetectorType.EMAIL]
             assert props.logs.onlyLoggers == ["com.example"]
             assert props.logs.keyAllowlist == ["user"]
 
@@ -55,11 +53,9 @@ class PuriflowPropertiesSpec extends Specification {
         expect:
         runner.run { ctx ->
             def props = ctx.getBean(PuriflowProperties)
-            assert !props.enabled
-            assert props.mode == Mode.DRY_RUN
-            assert props.detectors.isEmpty()
-
             assert !props.logs.enabled
+            assert props.logs.mode == Mode.DRY_RUN
+            assert props.logs.detectors.isEmpty()
             assert props.logs.onlyLoggers.isEmpty()
             assert props.logs.errors.maxDepth == null
             assert props.logs.errors.hidePackages == []
@@ -70,7 +66,7 @@ class PuriflowPropertiesSpec extends Specification {
         when: "trying to modify detectors"
         runner.run { ctx ->
             def props = ctx.getBean(PuriflowProperties)
-            props.getDetectors().add(DetectorType.EMAIL) // should throw UnsupportedOperationException
+            props.getLogs().getDetectors().add(DetectorType.EMAIL) // should throw UnsupportedOperationException
         }
 
         then:

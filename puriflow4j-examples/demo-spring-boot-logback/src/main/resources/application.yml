@@ -1,33 +1,32 @@
 server.port: 8080
 
 puriflow4j:
-  enabled: true
-  mode: mask
-
-  detectors:
-    - token_bearer
-    - cloud_access_key
-    - api_token_well_known
-    - basic_auth
-    - db_credential
-    - url_redactor
-    - private_key
-    - credit_card
-    - email
-    - password_kv
-    - iban
-    - ip
-
   logs:
     enabled: true
-    key-allowlist: []
-    key-blocklist: []
+    mode: mask
+
+    detectors:
+      - token_bearer
+      - cloud_access_key
+      - api_token_well_known
+      - basic_auth
+      - db_credential
+      - url_redactor
+      - private_key
+      - credit_card
+      - email
+      - password_kv
+      - iban
+      - ip
+
+    key-allowlist: [ ]
+    key-blocklist: [ ]
 
     errors:
-      shorten: false
+      shorten: true
       max-depth: 3
-      hide-packages: []
-#        - org.springframework
-#        - com.fasterxml.jackson
-#        - java.util.concurrent
+      hide-packages:
+        - org.springframework
+        - com.fasterxml.jackson
+        - java.util.concurrent
       categorize: true

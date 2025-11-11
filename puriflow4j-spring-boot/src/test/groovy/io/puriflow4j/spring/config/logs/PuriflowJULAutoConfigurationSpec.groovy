@@ -1,6 +1,6 @@
 package io.puriflow4j.spring.config.logs
 
-import io.puriflow4j.spring.config.PuriflowBaseAutoConfiguration
+
 import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -40,7 +40,7 @@ class PuriflowJULAutoConfigurationSpec extends Specification {
                 )
         // Base auto-config supplies Sanitizer/ExceptionClassifier/Properties
                 .withConfiguration(AutoConfigurations.of(
-                        PuriflowBaseAutoConfiguration,
+                        PuriflowBaseLogAutoConfiguration,
                         PuriflowJULAutoConfiguration
                 ))
 
@@ -66,7 +66,7 @@ class PuriflowJULAutoConfigurationSpec extends Specification {
                         "puriflow4j.logs.enabled=false"
                 )
                 .withConfiguration(AutoConfigurations.of(
-                        PuriflowBaseAutoConfiguration,
+                        PuriflowBaseLogAutoConfiguration,
                         PuriflowJULAutoConfiguration
                 ))
 
