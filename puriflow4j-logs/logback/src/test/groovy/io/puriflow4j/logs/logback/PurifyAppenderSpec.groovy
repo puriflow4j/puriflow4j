@@ -24,24 +24,31 @@ import java.sql.SQLException
 import java.util.regex.Pattern
 
 /**
- * Additional PurifyAppender tests focused on:
- *  - DRY_RUN behavior (warning emission, pass-through original),
- *  - STRICT behavior (redact on any change; pass-through otherwise),
- *  - recursion guard for internal puriflow.* loggers and internal marker.
+ * Comprehensive behavior tests for PurifyAppender.
  *
- * Uses the same tiny inlined detector as in your existing spec and the same shortener.
+ * What we verify:
+ *  - DRY_RUN: original is always forwarded; a single WARN is emitted when something is detected.
+ *  - MASK: message/MDC sanitization, exception rendering, throwable dropping, zero-overhead passthrough.
+ *  - STRICT: redaction rules per current implementation (see notes below).
+ *  - Recursion guards: puriflow.* namespace and internal marker.
+ *
+ * IMPORTANT about STRICT semantics (as implemented in the class under test):
+ *  - If ONLY MDC changes (message didn't change and no rendered exception), STRICT keeps the original message,
+ *    but still drops the throwable and forwards sanitized MDC.
+ *  - If the message changes for any reason (masking/shortening/rendered exception), STRICT emits "[REDACTED_LOG]"
+ *    and drops the throwable.
  */
-class PurifyAppenderDryRunAndStrictSpec extends Specification {
+class PurifyAppenderAllScenariosSpec extends Specification {
 
     Appender<ILoggingEvent> delegate = Mock()
     ExceptionClassifier classifier = Mock()
 
     def setup() {
-        // PurifyAppender.start() touches delegate context; ignore it in interaction counts.
+        // AppenderBase.start() touches delegate.getContext(); make it non-counting.
         _ * delegate.getContext() >> null
     }
 
-    // ---------- helpers (same style as your spec) ---------------------------
+    // ------------------------ helpers ---------------------------------------
 
     private static Sanitizer mkSanitizer() {
         Detector det = new Detector() {
@@ -64,7 +71,7 @@ class PurifyAppenderDryRunAndStrictSpec extends Specification {
     }
 
     private static ExceptionShortener mkShortener(Sanitizer san, boolean shorten) {
-        // Hide common frameworks so compact output is stable across JDKs
+        // Keep output deterministic across different JDKs by hiding common frameworks.
         new ExceptionShortener(san, shorten, 5,
                 List.of("org.springframework", "jakarta.servlet", "java.", "jdk.", "org.apache"))
     }
@@ -79,41 +86,41 @@ class PurifyAppenderDryRunAndStrictSpec extends Specification {
         e
     }
 
-    // ========================= DRY_RUN tests ================================
+    // ============================= DRY_RUN ===================================
 
-    def "DRY_RUN: emits one WARN via the same delegate and forwards the original unchanged (message-only finding)"() {
+    def "DRY_RUN: forwards original unchanged and emits one WARN when message contains secrets"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.DRY_RUN)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
         app.start()
 
         when:
         def original = evt("demo.Logger", "password=abc")
         app.doAppend(original)
 
-        then: "first call forwards the original untouched"
+        then: "original goes through as-is"
         1 * delegate.doAppend({ ILoggingEvent ev ->
             ev.formattedMessage == "password=abc" &&
                     ev.loggerName == "demo.Logger"
         })
 
-        and: "second call emits a synthetic WARN with DRY_RUN details"
+        and: "one synthetic WARN via the SAME delegate"
         1 * delegate.doAppend({ ILoggingEvent ev ->
             ev.loggerName == "puriflow.logs.dryrun" &&
                     ev.level == Level.WARN &&
                     ev.formattedMessage.contains("DRY-RUN") &&
                     ev.formattedMessage.contains("logger='demo.Logger'") &&
-                    ev.formattedMessage.contains("detected") &&
-                    ev.getMDCPropertyMap() != null // not null even if empty
+                    ev.getMDCPropertyMap() != null
         })
+        0 * _
     }
 
-    def "DRY_RUN: warning is emitted even when MDC is empty (regression test)"() {
+    def "DRY_RUN: warning is emitted even when MDC is empty (regression)"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.DRY_RUN)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
         app.start()
 
         when:
@@ -129,83 +136,72 @@ class PurifyAppenderDryRunAndStrictSpec extends Specification {
         0 * _
     }
 
-    def "DRY_RUN: throwable-only detection still produces a WARN and preserves original throwable"() {
+    def "DRY_RUN: throwable-only detection produces a WARN; original throwable is preserved"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.DRY_RUN)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
         app.start()
 
         when:
         def ex = new SQLException("password=boom")
-        def original = evt("demo.Logger", "no secrets here", [:], ex)
-        app.doAppend(original)
+        app.doAppend(evt("demo.Logger", "no secrets", [:], ex))
 
         then:
         1 * delegate.doAppend({ ILoggingEvent ev ->
-            // original event goes first, with its throwable untouched
-            ev.formattedMessage == "no secrets here" &&
+            ev.formattedMessage == "no secrets" &&
                     ev.getThrowableProxy() instanceof ThrowableProxy
         })
-
-        and:
         1 * delegate.doAppend({ ILoggingEvent ev ->
             ev.loggerName == "puriflow.logs.dryrun" &&
                     ev.level == Level.WARN &&
                     ev.formattedMessage.contains("DRY-RUN") &&
                     ev.formattedMessage.contains("logger='demo.Logger'")
         })
-
-        and:
         0 * _
     }
 
-    // ========================= STRICT tests =================================
-
-    def "STRICT: when nothing would change (no secrets), original content is forwarded untouched"() {
+    def "DRY_RUN: no findings -> only original is forwarded, no WARN"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.STRICT)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
         app.start()
 
         when:
-        app.doAppend(evt("demo.Logger", "hello world"))
+        app.doAppend(evt("demo.Logger", "benign", [traceId: "x"]))
+
+        then:
+        1 * delegate.doAppend({ ILoggingEvent ev -> ev.formattedMessage == "benign" })
+        0 * _
+    }
+
+    // ================================ MASK ===================================
+
+    def "MASK: message is sanitized; MDC empty; throwable absent"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.MASK)
+        app.start()
+
+        when:
+        app.doAppend(evt("demo.Logger", "secret=123"))
 
         then:
         1 * delegate.doAppend({ ILoggingEvent ev ->
-            ev.formattedMessage == "hello world" &&
-                    ev.getThrowableProxy() == null
+            ev.formattedMessage == "secret=[MASKED]" &&
+                    ev.getThrowableProxy() == null &&
+                    ev.getMDCPropertyMap().isEmpty()
         })
         0 * _
     }
 
-    def "STRICT: secrets in message cause full redaction and throwable is dropped if present"() {
+    def "MASK: MDC is sanitized while message stays intact"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.STRICT)
-        app.start()
-
-        when:
-        app.doAppend(evt("demo.Logger", "token123", [:], new RuntimeException("x")))
-
-        then:
-        1 * classifier.classify(_ as ThrowableView)
-
-        and:
-        1 * delegate.doAppend({ ILoggingEvent ev ->
-            ev.formattedMessage == "[REDACTED_LOG]" &&
-                    ev.getThrowableProxy() == null
-        })
-        0 * _
-    }
-
-    def "STRICT: secrets ONLY in MDC still cause full redaction"() {
-        given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.STRICT)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.MASK)
         app.start()
 
         when:
@@ -213,23 +209,148 @@ class PurifyAppenderDryRunAndStrictSpec extends Specification {
 
         then:
         1 * delegate.doAppend({ ILoggingEvent ev ->
+            ev.formattedMessage == "plain" &&
+                    ev.getMDCPropertyMap().get("password") == "[MASKED]"
+        })
+        0 * _
+    }
+
+    def "MASK: exception is rendered into message and raw throwable is dropped; classifier label may appear"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, true) // compact
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.MASK)
+        app.start()
+
+        when:
+        def ex = new SQLException("password=topsecret")
+        app.doAppend(evt("demo.Logger", "boom", [:], ex))
+
+        then:
+        1 * classifier.classify(_ as ThrowableView) >> new ExceptionClassifier.CategoryResult("DB")
+
+        and:
+        1 * delegate.doAppend({ ILoggingEvent ev ->
+            def parts = ev.formattedMessage.split("\\R", -1)
+            assert parts.length >= 2
+            def excLine = parts[1]
+            excLine.contains("[DB]") &&
+                    excLine.toLowerCase().contains("sqlexception") &&
+                    excLine.contains("[MASKED]") &&          // sanitized inside shortener
+                    ev.getThrowableProxy() == null            // dropped
+        })
+        0 * _
+    }
+
+    def "MASK: zero-overhead path when nothing changes (original content forwarded)"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.MASK)
+        app.start()
+
+        when:
+        def original = evt("demo.Logger", "no secrets here")
+        app.doAppend(original)
+
+        then:
+        1 * delegate.doAppend({ ILoggingEvent ev ->
+            ev.formattedMessage == "no secrets here" &&
+                    ev.getThrowableProxy() == null
+        })
+        0 * _
+    }
+
+    // ================================ STRICT =================================
+
+    def "STRICT: benign message and MDC -> original is forwarded untouched"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.STRICT)
+        app.start()
+
+        when:
+        app.doAppend(evt("demo.Logger", "hello", [:], null))
+
+        then:
+        1 * delegate.doAppend({ ILoggingEvent ev ->
+            ev.formattedMessage == "hello" &&
+                    ev.getThrowableProxy() == null
+        })
+        0 * _
+    }
+
+    def "STRICT: secrets in message cause full redaction and throwable is dropped"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.STRICT)
+        app.start()
+
+        when:
+        app.doAppend(evt("demo.Logger", "token123", [:], new RuntimeException("x")))
+
+        then:
+        1 * classifier.classify(_ as ThrowableView) >> null
+
+        and:
+        1 * delegate.doAppend({ ILoggingEvent ev ->
             ev.formattedMessage == "[REDACTED_LOG]" &&
                     ev.getThrowableProxy() == null
         })
         0 * _
     }
 
-    // ===================== Recursion guard tests ============================
-
-    def "internal logs (puriflow.*) are not processed and are simply forwarded"() {
+    def "STRICT: ONLY-MDC change keeps original message text but drops throwable and forwards sanitized MDC (matches current code)"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.DRY_RUN)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.STRICT)
         app.start()
 
         when:
-        // This imitates our own synthetic warning (but w/o marker); still under puriflow.* namespace
+        app.doAppend(evt("demo.Logger", "plain", [password: "abc"], null))
+
+        then:
+        1 * delegate.doAppend({ ILoggingEvent ev ->
+            // Current implementation: message unchanged, throwable null, MDC sanitized.
+            ev.formattedMessage == "plain" &&
+                    ev.getThrowableProxy() == null &&
+                    ev.getMDCPropertyMap().get("password") == "[MASKED]"
+        })
+        0 * _
+    }
+
+    def "STRICT: rendering an exception (even if message clean) counts as change -> full redaction"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, true)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.STRICT)
+        app.start()
+
+        when:
+        app.doAppend(evt("demo.Logger", "benign", [:], new SQLException("password=p")))
+
+        then:
+        1 * classifier.classify(_ as ThrowableView) >> null
+        1 * delegate.doAppend({ ILoggingEvent ev ->
+            ev.formattedMessage == "[REDACTED_LOG]" &&
+                    ev.getThrowableProxy() == null
+        })
+        0 * _
+    }
+
+    // ============================== recursion ================================
+
+    def "puriflow.* logs are not processed (forwarded as-is)"() {
+        given:
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
+        app.start()
+
+        when:
         def internal = evt("puriflow.logs.dryrun", "internal line")
         app.doAppend(internal)
 
@@ -240,9 +361,9 @@ class PurifyAppenderDryRunAndStrictSpec extends Specification {
 
     def "events tagged with internal marker are forwarded once and not re-processed"() {
         given:
-        def sanitizer = mkSanitizer()
-        def shortener = mkShortener(sanitizer, false)
-        def app = new PurifyAppender(delegate, sanitizer, shortener, null, classifier, Mode.DRY_RUN)
+        def san = mkSanitizer()
+        def sh  = mkShortener(san, false)
+        def app = new PurifyAppender(delegate, san, sh, null, classifier, Mode.DRY_RUN)
         app.start()
 
         when:

@@ -16,7 +16,7 @@ import org.springframework.test.annotation.DirtiesContext
                 "logging.config=classpath:logback-test.xml",
 
                 "puriflow4j.logs.enabled=true",
-                "puriflow4j.logs.mode=mask",
+                "puriflow4j.logs.mode=strict",
                 "puriflow4j.logs.detectors[0]=token_bearer",
                 "puriflow4j.logs.detectors[1]=cloud_access_key",
                 "puriflow4j.logs.detectors[2]=api_token_well_known",
@@ -36,7 +36,7 @@ import org.springframework.test.annotation.DirtiesContext
         ]
 )
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-class LogbackMaskModeSpec extends BaseLogbackSpec {
+class LogbackStrictModeSpec extends BaseLogbackSpec {
 
     @SpringBootApplication
     static class TestApp {}
@@ -64,7 +64,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and: "the exact masked line is present"
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     //  Verifies MDC is sanitized in Logback: 'token' is masked and 'traceId' is preserved.
@@ -106,7 +106,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "Charge card=[MASKED_CARD]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -123,8 +123,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 2].formattedMessage == "password=[MASKED]"
-        appender.list[logsSize - 1].formattedMessage == "x-api-key=[MASKED_ACCESS_KEY]"
+        appender.list[logsSize - 2].formattedMessage == "[REDACTED_LOG]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -165,7 +165,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "payout iban=[MASKED_IBAN]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -180,7 +180,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "client ip=[MASKED_IP]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -200,12 +200,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
-                "[Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]\n" +
-                "\tat demo.DemoController.error(DemoController.java:84)\n" +
-                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n" +
-                "\tat java.lang.reflect.Method.invoke(Method.java:580)\n" +
-                "\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)")
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -221,11 +216,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
-                "[Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]\n" +
-                "\tat demo.DemoController.nestedError(DemoController.java:95)\n" +
-                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n" +
-                "\tat java.lang.reflect.Method.invoke(Method.java:580)")
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /**
@@ -242,14 +233,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "Embedded block start:\n" +
-                "java.lang.RuntimeException: password=[MASKED]\n" +
-                "\tat com.acme.Foo.bar(Foo.java:10)\n" +
-                "\tat com.acme.Foo.baz(Foo.java:20)\n" +
-                "Caused by: java.sql.SQLException: url=jdbc:postgresql://[MASKED_URL] user=[MASKED_USER]\n" +
-                "  at org.postgresql.Driver.connect(Driver.java:42)\n" +
-                "\n" +
-                "--- end"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /** Purely benign content: nothing should be masked. */
@@ -288,7 +272,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "calling url=https://[MASKED_URL]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /** Basic auth header base64 should be masked. */
@@ -301,7 +285,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == "Auth header=Basic [MASKED_BASIC_AUTH]"
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 
     /** PEM-like private key content must be masked. */
@@ -314,8 +298,6 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
 
         and:
         def logsSize = appender.list.size()
-        appender.list[logsSize - 1].formattedMessage == """pem block:
-[MASKED_PRIVATE_KEY]
-"""
+        appender.list[logsSize - 1].formattedMessage == "[REDACTED_LOG]"
     }
 }

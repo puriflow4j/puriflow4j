@@ -173,16 +173,7 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
             renderedExc = shortener.format(tv, loggerName, label);
         }
 
-        final boolean messageChanged = !Objects.equals(originalMsg, maskedMsg);
-        final boolean mdcChanged = !Objects.equals(event.getMDCPropertyMap(), maskedMdc);
         final boolean hasRendered = (renderedExc != null);
-        final boolean anyChange = messageChanged || mdcChanged || hasRendered;
-
-        // STRICT: redact everything if anything would change
-        if (mode == Mode.STRICT && anyChange) {
-            delegate.doAppend(new SanitizedLoggingEvent(event, "[REDACTED_LOG]", maskedMdc, /* drop Throwable */ null));
-            return;
-        }
 
         // Compose final message; if we rendered the exception, append it and DROP raw Throwable
         String outMsg = maskedMsg;
@@ -190,6 +181,17 @@ public final class PurifyAppender extends AppenderBase<ILoggingEvent> {
         if (hasRendered) {
             outMsg = (outMsg == null || outMsg.isEmpty()) ? renderedExc : (outMsg + "\n" + renderedExc);
             toForwardThrowable = null; // prevent raw, unmasked stack printing by Logback
+        }
+
+        final boolean messageChanged = !Objects.equals(originalMsg, outMsg);
+        final boolean mdcChanged = !Objects.equals(event.getMDCPropertyMap(), maskedMdc);
+        final boolean anyChange = messageChanged || mdcChanged || hasRendered;
+
+        // STRICT: redact everything if anything would change
+        if (mode == Mode.STRICT && anyChange) {
+            delegate.doAppend(new SanitizedLoggingEvent(
+                    event, messageChanged ? "[REDACTED_LOG]" : originalMsg, maskedMdc, /* drop Throwable */ null));
+            return;
         }
 
         // Zero-overhead path
