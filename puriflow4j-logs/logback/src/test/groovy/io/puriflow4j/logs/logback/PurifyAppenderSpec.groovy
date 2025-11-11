@@ -38,7 +38,7 @@ import java.util.regex.Pattern
  *  - If the message changes for any reason (masking/shortening/rendered exception), STRICT emits "[REDACTED_LOG]"
  *    and drops the throwable.
  */
-class PurifyAppenderAllScenariosSpec extends Specification {
+class PurifyAppenderSpec extends Specification {
 
     Appender<ILoggingEvent> delegate = Mock()
     ExceptionClassifier classifier = Mock()
