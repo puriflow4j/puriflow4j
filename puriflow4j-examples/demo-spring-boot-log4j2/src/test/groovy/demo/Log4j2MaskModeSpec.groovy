@@ -56,8 +56,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
     }
 
     //  Verifies MDC (ThreadContext) is sanitized: 'token' is masked and 'traceId' is preserved.
@@ -91,8 +94,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "Charge card=[MASKED_CARD]"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Charge card=[MASKED_CARD]"
     }
 
     def "GET /log/secrets -> exact masked lines for password and api key"() {
@@ -101,10 +107,12 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        def lines = allLines()
-        assert lines.any { it == "password=[MASKED]" }
-        assert lines.any { it == "x-api-key=[MASKED_ACCESS_KEY]" }
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 2].message.formattedMessage == "password=[MASKED]"
+        appender.events[logsSize - 1].message.formattedMessage == "x-api-key=[MASKED_ACCESS_KEY]"
     }
 
     def "GET /log/mdc -> exact line and no raw JWT leaked"() {
@@ -113,9 +121,16 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "Plain message without args"
-        assert !joined().contains("eyJ.hdr.pay.sig")
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Plain message without args"
+
+        and:
+        LogEvent ev = (LogEvent) mem.events.last()
+        def mdc = ev.getContextData()?.toMap() ?: [:]
+        mdc.get("token") == "[MASKED_TOKEN]"
     }
 
     def "GET /log/iban -> exact masked IBAN line"() {
@@ -124,8 +139,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "payout iban=[MASKED_IBAN]"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "payout iban=[MASKED_IBAN]"
     }
 
     def "GET /log/ip -> exact masked IP line"() {
@@ -134,8 +152,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "client ip=[MASKED_IP]"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "client ip=[MASKED_IP]"
     }
 
     def "GET /log/error -> 5xx and masked fragments present; raw secrets absent"() {
@@ -146,11 +167,14 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
         resp.statusCode.is5xxServerError()
 
         and:
-        def m = joined()
-        assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
                 "[Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]\n" +
                 "\tat demo.DemoController.error(DemoController.java:80)\n" +
-                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
+                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n" +
+                "\tat java.lang.reflect.Method.invoke(Method.java:580)\n" +
+                "\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)")
     }
 
     def "GET /log/error-nested -> 5xx and nested causes are masked"() {
@@ -161,8 +185,9 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
         resp.statusCode.is5xxServerError()
 
         and:
-        def m = joined()
-        assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
                 "[Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]\n" +
                 "\tat demo.DemoController.nestedError(DemoController.java:90)\n" +
                 "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
@@ -176,13 +201,16 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        def m = joined()
-        assert m.contains("Embedded block start:\n" +
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Embedded block start:\n" +
                 "java.lang.RuntimeException: password=[MASKED]\n" +
                 "\tat com.acme.Foo.bar(Foo.java:10)\n" +
                 "\tat com.acme.Foo.baz(Foo.java:20)\n" +
                 "Caused by: java.sql.SQLException: url=jdbc:postgresql://[MASKED_URL] user=[MASKED_USER]\n" +
-                "  at org.postgresql.Driver.connect(Driver.java:42)")
+                "  at org.postgresql.Driver.connect(Driver.java:42)\n" +
+                "\n" +
+                "--- end"
     }
 
     def "GET /log/plain -> exact unmasked line"() {
@@ -192,7 +220,9 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
         then:
         resp.statusCode == HttpStatus.OK
         and:
-        lastLine() == "Hello world"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Hello world"
     }
 
     def "GET /log/status -> exact unmasked KVs"() {
@@ -201,8 +231,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "status=OK, count=42"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "status=OK, count=42"
     }
 
     def "GET /log/url -> token query param masked, user remains"() {
@@ -211,8 +244,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "calling url=https://[MASKED_URL]"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "calling url=https://[MASKED_URL]"
     }
 
     def "GET /log/basic-auth -> basic header masked"() {
@@ -221,8 +257,11 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        lastLine() == "Auth header=Basic [MASKED_BASIC_AUTH]"
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == "Auth header=Basic [MASKED_BASIC_AUTH]"
     }
 
     def "GET /log/private-key -> PEM content masked"() {
@@ -231,8 +270,12 @@ class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
         then:
         resp.statusCode == HttpStatus.OK
+
         and:
-        def m = joined()
-        assert m.contains("[MASKED_PRIVATE_KEY]")
+        def appender = memAppender()
+        def logsSize = appender.events.size()
+        appender.events[logsSize - 1].message.formattedMessage == """pem block:
+[MASKED_PRIVATE_KEY]
+"""
     }
 }

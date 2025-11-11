@@ -30,11 +30,6 @@ abstract class BaseLog2j2Spec extends Specification {
         return memAppender().events.collect { LogEvent e -> e.message.formattedMessage }
     }
 
-    protected static String joined() { allLines().join("\n") }
-    protected static String lastLine() { def l = allLines(); l.isEmpty() ? "" : l.last() }
-
-    private String url(String path) { "http://localhost:$port$path" }
-
     // ---------- lifecycle ----------
 
     def setup() {
