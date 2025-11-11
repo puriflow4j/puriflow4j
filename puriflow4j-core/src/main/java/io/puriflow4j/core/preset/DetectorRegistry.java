@@ -30,27 +30,10 @@ import java.util.*;
  */
 public final class DetectorRegistry {
 
-    /** Default enabled detectors (user may override in YAML). */
-    public static EnumSet<DetectorType> defaultTypes() {
-        return EnumSet.of(
-                DetectorType.EMAIL,
-                DetectorType.TOKEN_BEARER,
-                DetectorType.CLOUD_ACCESS_KEY,
-                DetectorType.API_TOKEN_WELL_KNOWN,
-                DetectorType.BASIC_AUTH,
-                DetectorType.DB_CREDENTIAL,
-                DetectorType.URL_REDACTOR,
-                DetectorType.PRIVATE_KEY,
-                DetectorType.CREDIT_CARD,
-                DetectorType.PASSWORD_KV,
-                DetectorType.IBAN,
-                DetectorType.IP);
-    }
-
     /**
      * Build detectors in a deterministic order.
      *
-     * @param types  the logical types enabled in config (may be null/empty)
+     * @param types  the logical types enabled in config (maybe null/empty)
      * @param kvCfg  the key policy configuration (never null)
      * @return immutable list of active detectors
      */
@@ -59,7 +42,7 @@ public final class DetectorRegistry {
 
         // Determine which detectors are enabled (use defaults if not provided)
         EnumSet<DetectorType> enabled =
-                (types == null || types.isEmpty()) ? EnumSet.copyOf(defaultTypes()) : EnumSet.copyOf(types);
+                (types == null || types.isEmpty()) ? EnumSet.noneOf(DetectorType.class) : EnumSet.copyOf(types);
 
         // Always prepend GenericKVBlocklistDetector if there is any policy configured
         boolean hasPolicy = !kvCfg.allow().isEmpty() || !kvCfg.block().isEmpty();

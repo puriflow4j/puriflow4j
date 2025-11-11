@@ -61,12 +61,8 @@ class PuriflowPropertiesSpec extends Specification {
 
             assert !props.logs.enabled
             assert props.logs.onlyLoggers.isEmpty()
-            assert props.logs.errors.maxDepth == 25
-            assert props.logs.errors.hidePackages == [
-                    "org.springframework",
-                    "com.fasterxml.jackson",
-                    "java.util.concurrent"
-            ]
+            assert props.logs.errors.maxDepth == null
+            assert props.logs.errors.hidePackages == []
         }
     }
 

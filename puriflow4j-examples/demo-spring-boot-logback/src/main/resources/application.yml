@@ -20,14 +20,14 @@ puriflow4j:
 
   logs:
     enabled: true
-    key-allowlist: [traceId, requestId, correlationId]
+    key-allowlist: []
     key-blocklist: []
 
     errors:
       shorten: false
       max-depth: 3
-      hide-packages:
-        - org.springframework
-        - com.fasterxml.jackson
-        - java.util.concurrent
+      hide-packages: []
+#        - org.springframework
+#        - com.fasterxml.jackson
+#        - java.util.concurrent
       categorize: true

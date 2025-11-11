@@ -16,12 +16,12 @@ import java.util.Set;
 public final class EmbeddedStacktraceShortener {
 
     private final Sanitizer sanitizer;
-    private final int maxDepth;
+    private final Integer maxDepth;
     private final Set<String> hidePackages;
 
-    public EmbeddedStacktraceShortener(Sanitizer sanitizer, int maxDepth, List<String> hidePkgs) {
+    public EmbeddedStacktraceShortener(Sanitizer sanitizer, Integer maxDepth, List<String> hidePkgs) {
         this.sanitizer = sanitizer;
-        this.maxDepth = Math.max(1, maxDepth);
+        this.maxDepth = (maxDepth == null || maxDepth <= 0) ? Integer.MAX_VALUE : maxDepth;
         this.hidePackages = Set.copyOf(hidePkgs == null ? List.of() : hidePkgs);
     }
 

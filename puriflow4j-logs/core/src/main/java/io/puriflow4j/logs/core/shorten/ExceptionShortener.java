@@ -21,13 +21,13 @@ public final class ExceptionShortener {
 
     private final Sanitizer sanitizer;
     private final boolean shorten;
-    private final int maxDepth; // how many application frames to print in compact mode
+    private final Integer maxDepth; // how many application frames to print in compact mode
     private final Set<String> hidePackages;
 
-    public ExceptionShortener(Sanitizer sanitizer, boolean shorten, int maxDepth, List<String> hidePkgs) {
+    public ExceptionShortener(Sanitizer sanitizer, boolean shorten, Integer maxDepth, List<String> hidePkgs) {
         this.sanitizer = Objects.requireNonNull(sanitizer, "sanitizer");
         this.shorten = shorten;
-        this.maxDepth = Math.max(1, maxDepth);
+        this.maxDepth = (maxDepth == null || maxDepth <= 0) ? Integer.MAX_VALUE : maxDepth;
         this.hidePackages = (hidePkgs == null ? Set.of() : Set.copyOf(hidePkgs));
     }
 

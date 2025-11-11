@@ -25,9 +25,7 @@ public class PuriflowBaseAutoConfiguration {
     @Bean
     public Sanitizer sanitizer(PuriflowProperties props) {
         var registry = new DetectorRegistry();
-        var types = props.getDetectors().isEmpty()
-                ? new ArrayList<>(DetectorRegistry.defaultTypes())
-                : new ArrayList<>(props.getDetectors());
+        var types = new ArrayList<>(props.getDetectors());
         var kvCfg = KVPatternConfig.of(
                 props.getLogs().getKeyAllowlist(), props.getLogs().getKeyBlocklist());
         var detectors = registry.build(types, kvCfg);

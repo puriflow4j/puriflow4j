@@ -6,37 +6,14 @@ import spock.lang.Specification
 
 /**
  * Tests for DetectorRegistry:
- * - defaultTypes content
- * - build() uses defaults when types are null/empty
+ * - build() uses empty list when types are null/empty
  * - GenericKVBlocklistDetector injected only when policy is present (allow/block not empty)
  * - deterministic ordering of detectors
  * - honoring custom enabled set
  */
 class DetectorRegistrySpec extends Specification {
 
-    def "defaultTypes contains the expected detector set"() {
-        when:
-        def defaults = DetectorRegistry.defaultTypes()
-
-        then:
-        defaults.containsAll(EnumSet.of(
-                DetectorType.EMAIL,
-                DetectorType.TOKEN_BEARER,
-                DetectorType.CLOUD_ACCESS_KEY,
-                DetectorType.API_TOKEN_WELL_KNOWN,
-                DetectorType.BASIC_AUTH,
-                DetectorType.DB_CREDENTIAL,
-                DetectorType.URL_REDACTOR,
-                DetectorType.PRIVATE_KEY,
-                DetectorType.CREDIT_CARD,
-                DetectorType.PASSWORD_KV,
-                DetectorType.IBAN,
-                DetectorType.IP
-        ))
-        defaults.size() == 12
-    }
-
-    def "build() with null types uses defaults and does NOT inject policy-detector when no policy configured"() {
+    def "build() with null types uses [] and does NOT inject policy-detector when no policy configured"() {
         given:
         def kv = KVPatternConfig.of(/*allow*/[], /*block*/[])
         def reg = new DetectorRegistry()
@@ -47,20 +24,7 @@ class DetectorRegistrySpec extends Specification {
 
         then:
         !classes.contains(GenericKVBlocklistDetector) // no policy → no policy-detector
-        classes.containsAll([
-                PasswordKVDetector,
-                ApiTokenWellKnownDetector,
-                CloudAccessKeyDetector,
-                BasicAuthDetector,
-                DbCredentialDetector,
-                UrlRedactorDetector,
-                TokenDetector,
-                CreditCardDetector,
-                EmailDetector,
-                IbanDetector,
-                IpDetector,
-                PrivateKeyDetector
-        ] as Set)
+        classes.isEmpty()
     }
 
     def "build() injects GenericKVBlocklistDetector FIRST when allow/block policy is present"() {
@@ -82,7 +46,20 @@ class DetectorRegistrySpec extends Specification {
         def reg = new DetectorRegistry()
 
         when:
-        def detectors = reg.build(null, kv)
+        def detectors = reg.build(List.of(
+                DetectorType.EMAIL,
+                DetectorType.TOKEN_BEARER,
+                DetectorType.CLOUD_ACCESS_KEY,
+                DetectorType.API_TOKEN_WELL_KNOWN,
+                DetectorType.BASIC_AUTH,
+                DetectorType.DB_CREDENTIAL,
+                DetectorType.URL_REDACTOR,
+                DetectorType.PRIVATE_KEY,
+                DetectorType.CREDIT_CARD,
+                DetectorType.PASSWORD_KV,
+                DetectorType.IBAN,
+                DetectorType.IP
+        ), kv)
         def names = detectors*.class*.simpleName
 
         then:

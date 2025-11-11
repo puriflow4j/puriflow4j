@@ -98,10 +98,9 @@ public class PuriflowProperties {
 
         @Setter
         @Getter
-        private int maxDepth = 25; // number of app frames to show
+        private Integer maxDepth; // null = not specified => ignore
 
-        private List<String> hidePackages =
-                new ArrayList<>(List.of("org.springframework", "com.fasterxml.jackson", "java.util.concurrent"));
+        private List<String> hidePackages = new ArrayList<>();
 
         @Setter
         @Getter
