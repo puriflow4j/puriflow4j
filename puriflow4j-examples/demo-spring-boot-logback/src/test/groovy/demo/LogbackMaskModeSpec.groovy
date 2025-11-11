@@ -51,7 +51,7 @@ import spock.lang.Specification
                 DemoController
         ]
 )
-class LogbackMaskModeSpec extends Specification {
+class LogbackMaskModeSpec extends BaseLogbackSpec {
 
     @SpringBootApplication
     static class TestApp {}
@@ -59,85 +59,7 @@ class LogbackMaskModeSpec extends Specification {
     @LocalServerPort int port
     @Autowired TestRestTemplate rest
 
-    private ListAppender<ILoggingEvent> appender
-
-    // ---------- helpers ----------
-
-    private static Logger rootLogger() {
-        (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME)
-    }
-
-    /**
-     * Find a ListAppender holding final, masked messages.
-     * We support:
-     *  - direct "MEM" ListAppender attached to ROOT
-     *  - Puriflow wrapper "PURIFY_WRAPPER_MEM" that delegates to a ListAppender
-     */
-    @SuppressWarnings("GroovyAssignabilityCheck")
-    private static ListAppender<ILoggingEvent> findMemListAppender() {
-        def root = rootLogger()
-
-        // 1) direct "MEM"?
-        Appender<?> mem = root.getAppender("MEM")
-        if (mem instanceof ListAppender) return (ListAppender<ILoggingEvent>) mem
-
-        // 2) wrapped "PURIFY_WRAPPER_MEM"?
-        Appender<?> wrapped = root.getAppender("PURIFY_WRAPPER_MEM")
-        if (wrapped != null) {
-            // Try Groovy property first
-            def delegate = null
-            try {
-                delegate = wrapped.hasProperty("delegate") ? wrapped.getProperty("delegate") : null
-            } catch (ignored) { /* fall through */ }
-
-            // Try a public getter if available
-            if (delegate == null && wrapped.metaClass.respondsTo(wrapped, "getDelegate")) {
-                delegate = wrapped.getDelegate()
-            }
-
-            // Try private field via reflection
-            if (!(delegate instanceof ListAppender)) {
-                try {
-                    def f = wrapped.getClass().getDeclaredField("delegate")
-                    f.accessible = true
-                    delegate = f.get(wrapped)
-                } catch (Throwable ignored) { /* fall through */ }
-            }
-
-            assert delegate instanceof ListAppender : "PURIFY_WRAPPER_MEM exists but delegate is not a ListAppender"
-            return (ListAppender<ILoggingEvent>) delegate
-        }
-
-        throw new IllegalStateException(
-                "MEM appender not found. Ensure logback-test.xml has <appender name=\"MEM\" .../> and it is attached to ROOT.\n" +
-                        "If Puriflow wraps it, wrapper name must be PURIFY_WRAPPER_MEM.")
-    }
-
-    private String url(String path) { "http://localhost:$port$path" }
-
-    /** Returns all formatted messages joined by newline (no timestamps/levels). */
-    private String allMessages() {
-        appender.list*.formattedMessage.join("\n")
-    }
-
-    /** Returns only the last formatted message (most endpoints log exactly one line). */
-    private String lastMessage() {
-        def list = appender.list
-        list.isEmpty() ? "" : list.last().formattedMessage
-    }
-
-    // ---------- lifecycle ----------
-
-    def setup() {
-        // Force resolution of our XML (handy debug line)
-        println "logback-test.xml = ${getClass().getResource('/logback-test.xml')}"
-        appender = findMemListAppender()
-        appender.list.clear()
-    }
-
-    def cleanup() {
-        appender?.list?.clear()
-    }
+    protected String url(String path) { "http://localhost:$port$path" }
 
     // ---------- tests (exact messages where deterministic) ----------
 
@@ -230,8 +152,17 @@ class LogbackMaskModeSpec extends Specification {
         resp.statusCode == HttpStatus.OK
 
         and:
+        assert !appender.list.isEmpty() : "No log events captured"
+
+        and:
+        ILoggingEvent ev = (ILoggingEvent) appender.list.last()
+        Map<String, String> mdc = ev.getMDCPropertyMap() ?: [:]
+
+        assert mdc.containsKey("token")
+        assert mdc.get("token") == "[MASKED_TOKEN]"
+
+        and:
         lastMessage() == "Plain message without args"
-        assert !allMessages().contains("eyJ.hdr.pay.sig")
     }
 
     /**
