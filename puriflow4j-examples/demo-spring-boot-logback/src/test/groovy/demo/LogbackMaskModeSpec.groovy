@@ -54,7 +54,7 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
     @LocalServerPort int port
     @Autowired TestRestTemplate rest
 
-    protected String url(String path) { "http://localhost:$port$path" }
+    private String url(String path) { "http://localhost:$port$path" }
 
     // ---------- tests (exact messages where deterministic) ----------
 

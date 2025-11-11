@@ -67,8 +67,6 @@ abstract class BaseLogbackSpec extends Specification {
                         "If Puriflow wraps it, wrapper name must be PURIFY_WRAPPER_MEM.")
     }
 
-    protected String url(String path) { "http://localhost:$port$path" }
-
     /** Returns all formatted messages joined by newline (no timestamps/levels). */
     protected String allMessages() {
         appender.list*.formattedMessage.join("\n")

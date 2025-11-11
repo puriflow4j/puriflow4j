@@ -1,18 +1,14 @@
 package demo
 
-import org.apache.logging.log4j.LogManager
-import org.apache.logging.log4j.core.LoggerContext
-import org.apache.logging.log4j.core.config.Configuration
-import org.apache.logging.log4j.core.LogEvent
-import org.apache.logging.log4j.core.test.appender.ListAppender
 
+import org.apache.logging.log4j.core.LogEvent
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
-import spock.lang.Specification
+import org.springframework.test.annotation.DirtiesContext
 
 /**
  * Integration tests for Log4j2 path using built-in test ListAppender.
@@ -25,7 +21,6 @@ import spock.lang.Specification
                 "spring.config.name=__none__",
                 "logging.config=classpath:log4j2-test.xml",
 
-                // puriflow4j.logs mask mode with all detectors
                 "puriflow4j.logs.enabled=true",
                 "puriflow4j.logs.mode=mask",
                 "puriflow4j.logs.detectors[0]=token_bearer",
@@ -42,7 +37,8 @@ import spock.lang.Specification
                 "puriflow4j.logs.detectors[11]=ip"
         ]
 )
-class Log4j2MaskModeSpec extends Specification {
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+class Log4j2MaskModeSpec extends BaseLog2j2Spec {
 
     @SpringBootApplication
     static class TestApp {}
@@ -50,44 +46,7 @@ class Log4j2MaskModeSpec extends Specification {
     @LocalServerPort int port
     @Autowired TestRestTemplate rest
 
-    private ListAppender mem
-
-    // ---------- helpers ----------
-
-    // Read current Log4j2 configuration
-    private static Configuration cfg() {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false)
-        assert ctx != null : "Log4j2 LoggerContext is null"
-        return ctx.getConfiguration()
-    }
-
-    // Obtain our MEM test appender (exists even after Puriflow wraps logger refs)
-    private static ListAppender memAppender() {
-        def app = cfg().getAppenders().get("MEM")
-        assert app instanceof ListAppender : "Appender 'MEM' not found or not a ListAppender. Check log4j2-test.xml and test dependency ':tests'."
-        return (ListAppender) app
-    }
-
-    private static List<String> allLines() {
-        return memAppender().events.collect { LogEvent e -> e.message.formattedMessage }
-    }
-
-    private static String joined() { allLines().join("\n") }
-    private static String lastLine() { def l = allLines(); l.isEmpty() ? "" : l.last() }
-
     private String url(String path) { "http://localhost:$port$path" }
-
-    // ---------- lifecycle ----------
-
-    def setup() {
-        println "log4j2-test.xml = ${getClass().getResource('/log4j2-test.xml')}"
-        mem = memAppender()
-        mem.clear() // start from clean buffer
-    }
-
-    def cleanup() {
-        mem?.clear()
-    }
 
     // ---------- tests (same endpoints & expectations as logback spec) ----------
 
