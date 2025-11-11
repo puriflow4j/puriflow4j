@@ -67,17 +67,6 @@ abstract class BaseLogbackSpec extends Specification {
                         "If Puriflow wraps it, wrapper name must be PURIFY_WRAPPER_MEM.")
     }
 
-    /** Returns all formatted messages joined by newline (no timestamps/levels). */
-    protected String allMessages() {
-        appender.list*.formattedMessage.join("\n")
-    }
-
-    /** Returns only the last formatted message (most endpoints log exactly one line). */
-    protected String lastMessage() {
-        def list = appender.list
-        list.isEmpty() ? "" : list.last().formattedMessage
-    }
-
     // ---------- lifecycle ----------
 
     def setup() {
