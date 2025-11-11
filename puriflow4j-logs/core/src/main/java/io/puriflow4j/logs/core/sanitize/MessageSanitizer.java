@@ -6,8 +6,8 @@ package io.puriflow4j.logs.core.sanitize;
 
 import io.puriflow4j.core.api.Sanitizer;
 
-public final class MessageSanitizer {
-    private final Sanitizer sanitizer;
+public class MessageSanitizer {
+    protected final Sanitizer sanitizer;
 
     public MessageSanitizer(Sanitizer sanitizer) {
         this.sanitizer = sanitizer;
@@ -15,5 +15,9 @@ public final class MessageSanitizer {
 
     public String sanitize(String message, String loggerName) {
         return (message == null || message.isEmpty()) ? message : sanitizer.apply(message, loggerName);
+    }
+
+    public Sanitizer.Result applyDetailed(String message, String loggerName) {
+        return sanitizer.applyDetailed(message, loggerName);
     }
 }
