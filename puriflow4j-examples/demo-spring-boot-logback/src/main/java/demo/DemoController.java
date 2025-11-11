@@ -38,6 +38,7 @@ public class DemoController {
     @GetMapping("/log/card")
     public String card() {
         String card = "4539 1488 0343 6467"; // valid Luhn
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("Charge card={}", card);
         return "ok";
     }
@@ -45,6 +46,7 @@ public class DemoController {
     /** Common secrets like password and x-api-key should be masked. */
     @GetMapping("/log/secrets")
     public String secrets() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("password={}", "MySuperSecret123");
         log.info("x-api-key={}", "AbC1234567890def");
         return "ok";
@@ -53,8 +55,7 @@ public class DemoController {
     /** MDC-only test: put only secret into MDC and emit a benign message. */
     @GetMapping("/log/mdc")
     public String mdc() {
-        String jwt = "eyJ.hdr.pay.sig";
-        MDC.put("token", jwt);
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("Plain message without args");
         return "ok";
     }
@@ -62,6 +63,7 @@ public class DemoController {
     /** IBAN should be masked. */
     @GetMapping("/log/iban")
     public String iban() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("payout iban={}", "DE89 3704 0044 0532 0130 00");
         return "ok";
     }
@@ -69,6 +71,7 @@ public class DemoController {
     /** IP address should be masked if detector is enabled. */
     @GetMapping("/log/ip")
     public String ip() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("client ip={}", "203.0.113.42");
         return "ok";
     }
@@ -76,6 +79,7 @@ public class DemoController {
     /** Database-style exception: should be categorized [DB], message masked, and stacktrace shortened. */
     @GetMapping("/log/error")
     public String error() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         try {
             throw new SQLException("password=SuperSecret123 url=jdbc:postgresql://db.prod/acme");
         } catch (SQLException e) {
@@ -86,6 +90,7 @@ public class DemoController {
     /** Nested causes to ensure full cause chain handling in compact mode's single 'Caused by' header. */
     @GetMapping("/log/error-nested")
     public String nestedError() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         try {
             throw new SQLException("jdbcUrl=jdbc:postgresql://db.prod/foo secret=abc");
         } catch (SQLException e) {
@@ -97,6 +102,7 @@ public class DemoController {
     /** Embedded stacktrace-looking text inside a normal log line should be scanned and masked. */
     @GetMapping("/log/embedded")
     public String embedded() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         String faux =
                 """
                 java.lang.RuntimeException: password=TopSecret1
@@ -112,6 +118,7 @@ public class DemoController {
     /** Purely benign content: nothing should be masked. */
     @GetMapping("/log/plain")
     public String plain() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("Hello world");
         return "ok";
     }
@@ -119,6 +126,7 @@ public class DemoController {
     /** Non-secret KV fields: these should remain as-is. */
     @GetMapping("/log/status")
     public String status() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("status={}, count={}", "OK", 42);
         return "ok";
     }
@@ -126,6 +134,7 @@ public class DemoController {
     /** URL redaction — access token must be masked, other benign params remain. */
     @GetMapping("/log/url")
     public String url() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("calling url={}", "https://api.example.com/items?token=eyJ.hdr.pay.sig&user=alice");
         return "ok";
     }
@@ -133,6 +142,7 @@ public class DemoController {
     /** Basic auth header base64 should be masked. */
     @GetMapping("/log/basic-auth")
     public String basicAuth() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         log.info("Auth header={}", "Basic dXNlcjpwYXNz");
         return "ok";
     }
@@ -140,6 +150,7 @@ public class DemoController {
     /** PEM-like private key content must be masked. */
     @GetMapping("/log/private-key")
     public String privateKey() {
+        MDC.put("token", "eyJ.hdr.pay.sig");
         String pem =
                 """
                 -----BEGIN PRIVATE KEY-----

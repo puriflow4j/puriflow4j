@@ -1,18 +1,14 @@
 package demo
 
-import ch.qos.logback.classic.Logger
 import ch.qos.logback.classic.spi.ILoggingEvent
-import ch.qos.logback.core.Appender
-import ch.qos.logback.core.read.ListAppender
-import org.slf4j.LoggerFactory
-
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.client.TestRestTemplate
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
-import spock.lang.Specification
+import org.springframework.test.annotation.DirtiesContext
+
 /**
  * Integration tests that verify the exact sanitized log messages produced
  * by DemoController endpoints. We assert the final message string that is
@@ -27,10 +23,8 @@ import spock.lang.Specification
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = [
                 "spring.config.name=__none__",
-                // make sure our in-memory appender is active
                 "logging.config=classpath:logback-test.xml",
 
-                // puriflow4j.logs mask mode with all detectors
                 "puriflow4j.logs.enabled=true",
                 "puriflow4j.logs.mode=mask",
                 "puriflow4j.logs.detectors[0]=token_bearer",
@@ -51,6 +45,7 @@ import spock.lang.Specification
                 DemoController
         ]
 )
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class LogbackMaskModeSpec extends BaseLogbackSpec {
 
     @SpringBootApplication
@@ -78,7 +73,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and: "the exact masked line is present"
-        lastMessage() == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Login attempt: email=[MASKED_EMAIL], Authorization: Bearer [MASKED_TOKEN], awsKey=[MASKED_ACCESS_KEY], x-auth-token=lol13"
     }
 
     //  Verifies MDC is sanitized in Logback: 'token' is masked and 'traceId' is preserved.
@@ -119,7 +115,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "Charge card=[MASKED_CARD]"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Charge card=[MASKED_CARD]"
     }
 
     /**
@@ -135,9 +132,9 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        def lines = allMessages().readLines()
-        assert lines.any { it == "password=[MASKED]" }
-        assert lines.any { it == "x-api-key=[MASKED_ACCESS_KEY]" }
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 2].formattedMessage == "password=[MASKED]"
+        appender.list[logsSize - 1].formattedMessage == "x-api-key=[MASKED_ACCESS_KEY]"
     }
 
     /**
@@ -162,7 +159,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         assert mdc.get("token") == "[MASKED_TOKEN]"
 
         and:
-        lastMessage() == "Plain message without args"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Plain message without args"
     }
 
     /**
@@ -176,7 +174,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "payout iban=[MASKED_IBAN]"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "payout iban=[MASKED_IBAN]"
     }
 
     /**
@@ -190,7 +189,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "client ip=[MASKED_IP]"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "client ip=[MASKED_IP]"
     }
 
     /**
@@ -209,11 +209,13 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode.is5xxServerError()
 
         and:
-        def m = allMessages()
-        assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: Failed to save user, token=[MASKED_TOKEN]] with root cause\n" +
                 "[Masked] SQLException: password=[MASKED] url=jdbc:postgresql://[MASKED_URL]\n" +
-                "\tat demo.DemoController.error(DemoController.java:80)\n" +
-                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
+                "\tat demo.DemoController.error(DemoController.java:84)\n" +
+                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n" +
+                "\tat java.lang.reflect.Method.invoke(Method.java:580)\n" +
+                "\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:255)")
     }
 
     /**
@@ -228,11 +230,12 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode.is5xxServerError()
 
         and:
-        def m = allMessages()
-        assert m.contains("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage.startsWith("Servlet.service() for servlet [dispatcherServlet] in context with path [] threw exception [Request processing failed: java.lang.RuntimeException: top-level msg] with root cause\n" +
                 "[Masked] SQLException: jdbcUrl=jdbc:postgresql://[MASKED_URL] secret=[MASKED]\n" +
-                "\tat demo.DemoController.nestedError(DemoController.java:90)\n" +
-                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)")
+                "\tat demo.DemoController.nestedError(DemoController.java:95)\n" +
+                "\tat jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)\n" +
+                "\tat java.lang.reflect.Method.invoke(Method.java:580)")
     }
 
     /**
@@ -248,13 +251,15 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        def m = allMessages()
-        assert m.contains("Embedded block start:\n" +
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Embedded block start:\n" +
                 "java.lang.RuntimeException: password=[MASKED]\n" +
                 "\tat com.acme.Foo.bar(Foo.java:10)\n" +
                 "\tat com.acme.Foo.baz(Foo.java:20)\n" +
                 "Caused by: java.sql.SQLException: url=jdbc:postgresql://[MASKED_URL] user=[MASKED_USER]\n" +
-                "  at org.postgresql.Driver.connect(Driver.java:42)")
+                "  at org.postgresql.Driver.connect(Driver.java:42)\n" +
+                "\n" +
+                "--- end"
     }
 
     /** Purely benign content: nothing should be masked. */
@@ -266,7 +271,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and: "the exact message is written as-is"
-        lastMessage() == "Hello world"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Hello world"
     }
 
     /** Non-secret KV fields: these should remain as-is. */
@@ -278,7 +284,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "status=OK, count=42"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "status=OK, count=42"
     }
 
     /** URL redaction — token must be masked, other benign param remains. */
@@ -290,7 +297,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "calling url=https://[MASKED_URL]"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "calling url=https://[MASKED_URL]"
     }
 
     /** Basic auth header base64 should be masked. */
@@ -302,7 +310,8 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        lastMessage() == "Auth header=Basic [MASKED_BASIC_AUTH]"
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == "Auth header=Basic [MASKED_BASIC_AUTH]"
     }
 
     /** PEM-like private key content must be masked. */
@@ -314,8 +323,9 @@ class LogbackMaskModeSpec extends BaseLogbackSpec {
         resp.statusCode == HttpStatus.OK
 
         and:
-        def msg = allMessages()
-        assert msg.contains("pem block:\n" +
-                "[MASKED_PRIVATE_KEY]")
+        def logsSize = appender.list.size()
+        appender.list[logsSize - 1].formattedMessage == """pem block:
+[MASKED_PRIVATE_KEY]
+"""
     }
 }
